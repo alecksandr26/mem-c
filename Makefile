@@ -6,7 +6,7 @@ BUILD_DIR = build
 OBJ_DIR = $(addprefix $(BUILD_DIR)/, obj)
 LIB_DIR = $(addprefix $(BUILD_DIR)/, lib)
 MAIN = $(addprefix $(BUILD_DIR)/, main.out)
-OBJS = $(addprefix $(OBJ_DIR)/, mem_alloc.o)
+OBJS = $(addprefix $(OBJ_DIR)/, mem_alloc.o heap.o)
 
 SRC_DIR = src
 INCLUDE_DIR = include
