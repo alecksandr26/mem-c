@@ -16,6 +16,7 @@ Except_T ExceptFatalHeapError = INIT_EXCEPT_T("Fatal error in heap's data segmen
 Except_T ExceptInvalidNBytes = INIT_EXCEPT_T("Invalid number of bytes");
 Except_T ExceptInvalidAddr = INIT_EXCEPT_T("Invalid address");
 Except_T ExceptCorruptedAddr = INIT_EXCEPT_T("Corrupted address");
+Except_T ExceptOverFreededChunks = INIT_EXCEPT_T("Over freeded chunks");
 
 uint8_t *start_brk = NULL;
 uint8_t *end_brk = NULL;
@@ -28,6 +29,8 @@ unsigned int MEM_ALLOC_MIN_CHUNK_SIZE = 40;
 
 static inline uint64_t aling_to_mul_8(uint64_t n)
 {
+	if (n % 8 == 0)
+		return n;
 	return n + (8 - (n % 8));
 }
 
@@ -43,6 +46,7 @@ void *mem_alloc(unsigned long nbytes)
 	uint8_t *ptr;
 	assert(aling_to_mul_8(nbytes + sizeof(uint64_t)) >= nbytes + sizeof(uint64_t));
 	nbytes = aling_to_mul_8(nbytes + sizeof(uint64_t));
+	nbytes = MAX(nbytes, MEM_ALLOC_MIN_CHUNK_SIZE);
 	
 	if (heap_free_chunks.size && CHUNK_SIZE(Heap_top(&heap_free_chunks)) > nbytes) {
 		uint8_t *frag_chunk = Heap_pop(&heap_free_chunks);
@@ -54,6 +58,7 @@ void *mem_alloc(unsigned long nbytes)
 			assert(CHUNK_SIZE(ptr) == nbytes - sizeof(uint64_t));
 			CHUNK_SIZE(frag_chunk) = frag_chunk_size;
 			assert(CHUNK_SIZE(frag_chunk) == frag_chunk_size);
+			/* TODO: Add the exception for the capacity of freeded chunks */
 			Heap_push(&heap_free_chunks, frag_chunk);
 			return ptr;
 		}
@@ -71,6 +76,7 @@ void *mem_alloc(unsigned long nbytes)
 	return ptr;
 }
 
+/* TODO: Implement the realloc and calloc */
 void *mem_ralloc(void *addr, unsigned long nbytes)
 {
 	assert(0, "Unimplemented");
@@ -96,32 +102,87 @@ void mem_free(void *addr)
 		return;
 	}
 
-	/* TODO: Add exception of the limit of free chunks */
+	/* TODO: Add the functionality of combining chunks into just one also in alloc */
+
+	if (heap_free_chunks.size == HEAP_CAPACITY)
+		RAISE(ExceptOverFreededChunks, "Can't free more");
+
 	Heap_push(&heap_free_chunks, addr);
+}
+
+int mem_dbg_is_freeded(void *addr)
+{
+	uint8_t *ptr = addr;
+	if (ptr < start_brk
+	    || ptr > (uint8_t *) &ptr)
+		RAISE(ExceptInvalidAddr, "addr out of range in the heap");
+
+	return ptr >= end_brk || Heap_find(&heap_free_chunks, addr) != -1;
+}
+
+unsigned int mem_dbg_num_chunks(void)
+{
+	uint32_t nchunks = 0;
+	
+	if (start_brk != NULL) {
+		uint8_t *ptr = start_brk;
+		while (1) {
+			ptr += sizeof(uint64_t);
+			if (ptr >= end_brk)
+				break;
+			ptr += CHUNK_SIZE(ptr);
+			nchunks++;
+		}
+	}
+
+	return nchunks;
+}
+
+void mem_dbg_dump_chunks_buff(void **buff, int n)
+{
+	uint32_t nchunks = mem_dbg_num_chunks();
+	n = MIN(n, (int) nchunks);
+
+	uint8_t *ptr = start_brk;
+	for (int i = 0; i < n; i++) {
+		ptr += sizeof(uint64_t);
+		buff[i] = ptr;
+		ptr += CHUNK_SIZE(ptr);
+	}
 }
 
 void mem_dbg_dump_chunks_info(void)
 {
-	size_t nchuks = 0;
+	uint32_t nchunks = mem_dbg_num_chunks();
+	uint32_t nfreededchunks = 0, nnonfreededchunks = 0;
 	char chunks_info[MAX_CAP_CHUNKS_INFO][256];
+	uint8_t *buff[nchunks];
 	
-	if (start_brk != NULL) {
-		uint8_t *ptr = start_brk;
-		while (ptr < end_brk && nchuks < MAX_CAP_CHUNKS_INFO) {
-			ptr += sizeof(uint64_t);
-			sprintf(chunks_info[nchuks],
-				"Num Chunk: %lu, start: %p, end: %p, size: %lu, free: %s",
-				nchuks + 1, ptr - sizeof(uint64_t), ptr + CHUNK_SIZE(ptr),
-				CHUNK_SIZE(ptr), ((Heap_find(&heap_free_chunks, ptr) == -1)
-						  ? "false"
-						  : "true"));
-			ptr += CHUNK_SIZE(ptr);
-			nchuks++;
-		}
+	mem_dbg_dump_chunks_buff((void **) buff, nchunks);
+
+	uint8_t *ptr = start_brk;
+	for (uint32_t i = 0; i < nchunks && i < MAX_CAP_CHUNKS_INFO; i++) {
+		ptr += sizeof(uint64_t);
+		if (!mem_dbg_is_freeded(ptr))
+			nnonfreededchunks++;
+		else
+			nfreededchunks++;
+		sprintf(chunks_info[i],
+			"Num Chunk: %i, start: %p, end: %p, size: %lu, free: %s",
+			i + 1, ptr - sizeof(uint64_t), ptr + CHUNK_SIZE(ptr),
+			CHUNK_SIZE(ptr), ((Heap_find(&heap_free_chunks, ptr) == -1)
+					  ? "false"
+					  : "true"));
+		ptr += CHUNK_SIZE(ptr);
 	}
 
-	printf("Total Num of Chunks: %lu, start_brk: %p, end_brk: %p \n",
-	       nchuks, start_brk, end_brk);
-	for (size_t i = 0; i < nchuks; i++)
-		printf("%s\n", chunks_info[i]);
+	LOG_DBG_INF("Total Num of Chunks: %i, freeded: %i (%.1f %%), nonfreeded: %i (%.1f %%), "
+		    "start_brk: %p, end_brk: %p",
+		    nchunks, nfreededchunks, (float) (nfreededchunks * 100 / ((nchunks > 0 ? nchunks : 1))),
+		    nnonfreededchunks, (float) (nnonfreededchunks * 100 / ((nchunks > 0 ? nchunks : 1))),
+						      start_brk, end_brk);
+	for (size_t i = 0; i < nchunks; i++)
+		LOG_DBG_INF(chunks_info[i]);
 }
+
+
