@@ -1,2 +1,2 @@
-# mem_alloc-c
+# mem-c
 Just my own allocator
