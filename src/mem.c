@@ -10,29 +10,13 @@
 #include "utils.h"
 #include "heap.h"
 
+/* TODO: Change all this code to work for Page_T */
+
 #define MAX_CAP_CHUNKS_INFO 1024
 
-Except_T ExceptFatalHeapError = INIT_EXCEPT_T("Fatal error in heap's data segment ");
 Except_T ExceptInvalidNBytes = INIT_EXCEPT_T("Invalid number of bytes");
 Except_T ExceptInvalidAddr = INIT_EXCEPT_T("Invalid address");
 Except_T ExceptCorruptedAddr = INIT_EXCEPT_T("Corrupted address");
-Except_T ExceptOverFreededChunks = INIT_EXCEPT_T("Over freeded chunks");
-
-uint8_t *start_brk = NULL;
-uint8_t *end_brk = NULL;
-
-Heap_T heap_free_chunks = {
-	.size = 0
-};
-
-unsigned int MEM_ALLOC_MIN_CHUNK_SIZE = 40;
-
-static inline uint64_t aling_to_mul_8(uint64_t n)
-{
-	if (n % 8 == 0)
-		return n;
-	return n + (8 - (n % 8));
-}
 
 void *mem_alloc(unsigned long nbytes)
 {
@@ -58,7 +42,10 @@ void *mem_alloc(unsigned long nbytes)
 			assert(CHUNK_SIZE(ptr) == nbytes - sizeof(uint64_t));
 			CHUNK_SIZE(frag_chunk) = frag_chunk_size;
 			assert(CHUNK_SIZE(frag_chunk) == frag_chunk_size);
-			/* TODO: Add the exception for the capacity of freeded chunks */
+			
+			if (heap_free_chunks.size == HEAP_CAPACITY)
+				RAISE(ExceptOverFreededChunks, "Can't free more");
+			
 			Heap_push(&heap_free_chunks, frag_chunk);
 			return ptr;
 		}
@@ -96,19 +83,20 @@ void mem_free(void *addr)
 	if (CHUNK_SIZE(ptr) > (uint64_t) (end_brk - ptr))
 		RAISE(ExceptCorruptedAddr, "size of addr is out of range");
 
+
 	if (CHUNK_SIZE(ptr) == (uint64_t) (end_brk - ptr)) {
 		end_brk = ptr - sizeof(uint64_t);
 		brk(end_brk);
 		return;
 	}
 
-	/* TODO: Add the functionality of combining chunks into just one also in alloc */
-
 	if (heap_free_chunks.size == HEAP_CAPACITY)
 		RAISE(ExceptOverFreededChunks, "Can't free more");
 
 	Heap_push(&heap_free_chunks, addr);
 }
+
+/* TODO: Change this utilities to work with pages */
 
 int mem_dbg_is_freeded(void *addr)
 {
@@ -182,7 +170,7 @@ void mem_dbg_dump_chunks_info(void)
 		    nnonfreededchunks, (float) (nnonfreededchunks * 100 / ((nchunks > 0 ? nchunks : 1))),
 						      start_brk, end_brk);
 	for (size_t i = 0; i < nchunks; i++)
-		LOG_DBG_INF(chunks_info[i]);
+		LOG_DBG_INF("%s", chunks_info[i]);
 }
 
 

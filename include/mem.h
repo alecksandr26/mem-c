@@ -1,11 +1,8 @@
 #ifndef MEM_H
 #define MEM_H
 
-/* TODO: Change the repository name to mem-c */
-
 #include <except.h>
 
-extern Except_T ExceptFatalHeapError;
 extern Except_T ExceptInvalidNBytes;
 extern Except_T ExceptInvalidAddr;
 extern Except_T ExceptCorruptedAddr;

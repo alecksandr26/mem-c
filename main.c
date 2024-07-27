@@ -37,7 +37,6 @@ void test1(void)
 	puts("");
 }
 
-
 void foo(void *addr)
 {
 	assert(!mem_dbg_is_freeded(addr));
@@ -61,7 +60,8 @@ uint8_t *find_nonfree_chunk(void)
 	assert(0);
 }
 
-int main(void)
+
+void random_allocations(void)
 {
 	srand(time(0));
 	
@@ -79,16 +79,26 @@ int main(void)
 		if (i % 2 == 0 && mem_dbg_num_chunks() > 0) {
 			ptr = find_nonfree_chunk();
 			mem_free(ptr);
-			puts("Free memory");
+			LOG_DBG_INF("Freeing Memory");
 		}
 
 		mem_dbg_dump_chunks_info();
 		puts("");
 	}
+}
 
+int main(void)
+{
+	uint8_t *ptr;
 
-	/* test1(); */
+	/* Simple allocation */
+	ptr = mem_alloc(10);
+	mem_free(ptr);
 	
+	ptr = mem_alloc(GIGABYTE);
+	assert((uint64_t) (end_brk - start_brk) == (GIGABYTE + 8), "Should be equal");
+	mem_free(ptr);
+	assert(start_brk == end_brk, "Should be equal");
 	
 	return 0;
 }

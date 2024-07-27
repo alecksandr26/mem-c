@@ -7,15 +7,19 @@ OBJ_DIR = $(addprefix $(BUILD_DIR)/, obj)
 LIB_DIR = $(addprefix $(BUILD_DIR)/, lib)
 TEST_DIR = $(addprefix $(BUILD_DIR)/, test)
 MAIN = $(addprefix $(BUILD_DIR)/, main.out)
-OBJS = $(addprefix $(OBJ_DIR)/, mem.o heap.o)
+OBJS = $(addprefix $(OBJ_DIR)/, heap.o chk.o page.o)
 TESTS = $(addprefix $(TEST_DIR)/, test.out)
 
 SRC_DIR = src
 INCLUDE_DIR = include
 
+all: $(MAIN) $(TESTS)
+
+run: $(MAIN)
+	./$<
+
 $(MAIN): main.c $(OBJS) | $(BUILD_DIR)
 	$(C) $(C_FLAGS) $^ -o $@ $(C_LIBS_FLAGS)
-
 
 test: $(TESTS)
 	$(foreach test, $(TESTS), ./$(test))
