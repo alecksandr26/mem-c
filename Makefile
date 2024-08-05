@@ -7,7 +7,7 @@ OBJ_DIR = $(addprefix $(BUILD_DIR)/, obj)
 LIB_DIR = $(addprefix $(BUILD_DIR)/, lib)
 TEST_DIR = $(addprefix $(BUILD_DIR)/, test)
 MAIN = $(addprefix $(BUILD_DIR)/, main.out)
-OBJS = $(addprefix $(OBJ_DIR)/, heap.o chk.o page.o)
+OBJS = $(addprefix $(OBJ_DIR)/, heap.o chk.o page.o mem.o)
 TESTS = $(addprefix $(TEST_DIR)/, test.out)
 
 SRC_DIR = src

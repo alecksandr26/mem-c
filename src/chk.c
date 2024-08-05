@@ -5,7 +5,7 @@
 #include "heap.h"
 #include "utils.h"
 
-unsigned int CHK_MIN_CHUNK_SIZE = 40;
+int CHK_MIN_CHUNK_SIZE = 40;
 
 Except_T ExceptOverFreededChunks = INIT_EXCEPT_T("Over freeded chunks");
 

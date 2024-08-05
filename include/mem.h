@@ -16,12 +16,19 @@ extern void *mem_calloc(unsigned long obj_size, unsigned long nobjs);
 extern void mem_free(void *addr);
 
 #ifndef NDEBUG
-extern int mem_dbg_is_freeded(void *addr);
-extern unsigned int mem_dbg_num_chunks(void);
-extern void mem_dbg_dump_chunks_buff(void **buff, int n);
-extern void mem_dbg_dump_chunks_info(void);
+#ifdef MEM_DBG
+extern unsigned int mem_dbg_num_pages(void);
+extern void mem_dbg_dump_pages_buff(void **buff, unsigned int n);
+extern void mem_dbg_dump_pages_info(void);
+extern unsigned int mem_dbg_num_chks_in_page(const void *page_ptr);
+extern void mem_dbg_dump_info(void);
 #endif
 
+extern int mem_dbg_is_freeded(void *addr);
+extern unsigned int mem_dbg_num_chks(void);
+extern void mem_dbg_dump_chks_buff(void **buff, int n);
+extern void mem_dbg_dump_chks_info(void);
+#endif
 #endif
 
 

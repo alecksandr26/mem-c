@@ -118,6 +118,8 @@ void Page_chk_free(Page_T *page, Chk_T *chk)
 
 void Page_free(Page_T *page)
 {
+	assert(page != NULL && page->available != NULL
+	       && page->end != NULL && page->ptr != NULL, "Can't be null");
 
 	if (munmap(page->ptr, page->size) == -1)
 		RAISE(ExceptFatalPageError, "munmap: %s", strerror(errno));

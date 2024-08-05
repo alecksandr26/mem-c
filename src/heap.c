@@ -34,6 +34,7 @@ void *Heap_pop(Heap_T *heap, int (*cmp)(const void **addr1, const void **addr2))
 
 const void *Heap_top(const Heap_T *heap)
 {
+	assert(heap->size);
 	return heap->buff[0];
 }
 

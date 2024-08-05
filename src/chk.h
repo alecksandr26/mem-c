@@ -9,7 +9,7 @@
 typedef struct {
 	const uint8_t *raddr;	/* reverserd address for user */
 	uint8_t *ptr, *end;
-	uint32_t size, capacity;
+	int32_t size, capacity;
 } Chk_T;
 
 #define CHKPTR_PTR(chkptr) ((uint8_t *) (chkptr))
@@ -25,7 +25,7 @@ typedef struct {
 			}
 
 extern Except_T ExceptOverFreededChunks;
-extern unsigned int CHK_MIN_CHUNK_SIZE;
+extern int CHK_MIN_CHUNK_SIZE;
 extern Heap_T heap_free_chunks;
 extern int Chk_capacity_cmp(const void **chk1, const void **chk2);
 

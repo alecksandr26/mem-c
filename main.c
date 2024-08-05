@@ -4,38 +4,11 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define MEM_DBG
 #include "include/mem.h"
 #include "src/heap.h"
 #include "src/utils.h"
 
-extern uint8_t *start_brk;
-extern uint8_t *end_brk;
-extern unsigned int MEM_ALLOC_MIN_CHUNK_SIZE;
-extern Heap_T heap_free_chunks;
-
-void test1(void)
-{
-	MEM_ALLOC_MIN_CHUNK_SIZE = 8;
-	
-	void *addr = mem_alloc(10);
-	void *addr2 = mem_alloc(20);
-	void *addr3 = mem_alloc(30);
-
-	mem_dbg_dump_chunks_info();
-	puts("");
-
-	mem_free(addr2);
-
-	mem_dbg_dump_chunks_info();
-	puts("");
-	
-	void *addr4 = mem_alloc(4);
-
-	assert(heap_free_chunks.size == 1);
-	
-	mem_dbg_dump_chunks_info();
-	puts("");
-}
 
 void foo(void *addr)
 {
@@ -43,62 +16,76 @@ void foo(void *addr)
 }
 
 
-
-uint8_t *find_nonfree_chunk(void)
+void simple_allocs(void)
 {
-	unsigned int n = mem_dbg_num_chunks();
-	void *buff[n];
+	uint8_t *ptr, *ptr2, *ptr3;
 
-	mem_dbg_dump_chunks_buff(buff, n);
+	/* Simple allocation */
+	ptr = mem_alloc(100);
+	ptr2 = mem_alloc(40);
+	ptr3 = mem_alloc(200);
+
 	
-	while (1) {
-		unsigned int i = rand() % n;
-		if (!mem_dbg_is_freeded(buff[i]))
-			return buff[i];
-	}
+	int npages = mem_dbg_num_pages();
+	void *buff[npages];
+	mem_dbg_dump_pages_buff(buff, npages);
+	
+	assert(npages == 1);
 
-	assert(0);
+	int nchks = mem_dbg_num_chks_in_page(buff[0]);
+	assert(nchks == 3);
+	
+	mem_dbg_dump_chks_info();	
+	mem_free(ptr);
+	puts("---------------------------");
+
+	mem_dbg_dump_chks_info();
+	mem_free(ptr2);
+	puts("---------------------------");
+	
+	mem_dbg_dump_chks_info();	
+	mem_free(ptr3);
+	puts("---------------------------");
+
+	mem_dbg_dump_chks_info();
 }
 
-
-void random_allocations(void)
-{
-	srand(time(0));
-	
-	MEM_ALLOC_MIN_CHUNK_SIZE = 8;
-	
-#define N 100
-
-	for (int i = 0; i < N; i++) {
-		printf("----------------- %i -----------------\n", i);
-		int n = (rand() % 123) + 1;
-		void *ptr = mem_alloc(n);
-		mem_dbg_dump_chunks_info();
-		puts("");
-		
-		if (i % 2 == 0 && mem_dbg_num_chunks() > 0) {
-			ptr = find_nonfree_chunk();
-			mem_free(ptr);
-			LOG_DBG_INF("Freeing Memory");
-		}
-
-		mem_dbg_dump_chunks_info();
-		puts("");
-	}
-}
 
 int main(void)
 {
-	uint8_t *ptr;
+	/* simple_allocs(); */
 
-	/* Simple allocation */
-	ptr = mem_alloc(10);
-	mem_free(ptr);
+	int nallocations = 1000, nfrees = 0;
+	void *allocs[nallocations];
+	int max_mem_to_alloc = KILOBYTE;
 	
-	ptr = mem_alloc(GIGABYTE);
-	assert((uint64_t) (end_brk - start_brk) == (GIGABYTE + 8), "Should be equal");
-	mem_free(ptr);
-	assert(start_brk == end_brk, "Should be equal");
+	for (int i = 0; i < nallocations; i++) {
+		/* puts("---------------------------------------------------"); */
+		/* mem_dbg_dump_chks_info(); */
+		
+		allocs[i] = mem_alloc((rand() % max_mem_to_alloc) + 1);
+		/* LOG_DBG_INF("allocating: %p", allocs[i]); */
+		
+		/* puts(""); */
+		/* mem_dbg_dump_chks_info(); */
+		/* puts(""); */
+		
+		if (rand() % 2 == 0) {
+			uint32_t q = rand() % (i + 1);
+			while (allocs[q] == NULL)
+				q = rand() % (i + 1);
+			/* LOG_DBG_INF("freeing: %p", allocs[q]); */
+			mem_free(allocs[q]);
+			allocs[q] = NULL;
+			nfrees++;
+		}
+
+		
+		/* mem_dbg_dump_chks_info(); */
+	}
+
+	mem_dbg_dump_chks_info();
+	LOG_DBG_INF("Total number of allocations: %u, Total number of frees: %u (%0.1f%%)", nallocations, nfrees, (float) nfrees * 100 / nallocations);
 	
 	return 0;
 }

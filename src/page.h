@@ -7,7 +7,7 @@
 
 typedef struct {
 	uint8_t *ptr, *available, *end;
-	uint64_t size, capacity;
+	int64_t size, capacity;
 } Page_T;
 
 
