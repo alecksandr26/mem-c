@@ -3,7 +3,7 @@
 #include <time.h>
 #include <unittest.h>
 
-#define MEM_DBG
+#define FULL_MEM_DBG
 #include "../include/mem.h"
 #include "utils.h"
 #include "heap.h"
@@ -46,6 +46,25 @@ TESTCASE(TestCaseHeap) {
 		ASSERT_EQ(*((int *) Heap_top(&heap)), 10,
 			  "Must to be top");
 	}
+
+
+	TEST(HardTest) {
+		srand(time(0));
+
+		
+		int n = 1000;
+		int arr[n];
+		
+		for (int i = 0; i < n; i++) {
+			arr[i] = rand() % 1001;
+			Heap_push(&heap, &arr[i], &cmp);
+		}
+
+		for (int i = 0; i < n; i++) {
+			int index = Heap_find(&heap, &arr[i], &cmp);
+			ASSERT(index != -1);
+		}
+	}
 } ENDTESTCASE
 
 
@@ -60,16 +79,16 @@ TESTCASE(TestPage) {
 	}
 
 	TEST(SimpleChkAlloc) {
-		Chk_T chk = {
+		Chk_T chk1 = {
 			.size = 40
 		};
 		
-		Page_chk_alloc(&page, &chk);
+		Page_chk_alloc(&page, &chk1);
 		
-		ASSERT_LT(chk.raddr, page.available, "the available must to be moved");
-		ASSERT(chk.raddr > page.ptr
-		       && chk.raddr < page.end, "Must be in range");
-		ASSERT_EQ(chk.capacity, chk.size - sizeof(uint64_t));
+		ASSERT_LT(chk1.raddr, page.available, "the available must to be moved");
+		ASSERT(chk1.raddr > page.ptr
+		       && chk1.raddr < page.end, "Must be in range");
+		ASSERT_EQ(chk1.capacity, chk1.size - sizeof(uint64_t));
 		ASSERT_EQ(page.available, PAGEPTR_AVAILABLE_ADDR(page.ptr),
 			  "Must be equal");
 	}
@@ -101,14 +120,14 @@ TESTCASE(TestPage) {
 
 
 	TEST(ChkFree) {
-		Chk_T chk = {
+		Chk_T chk1 = {
 			.size = 1024
 		};
 		
-		Page_chk_alloc(&page, &chk);
-		Page_chk_free(&page, &chk);
+		Page_chk_alloc(&page, &chk1);
+		Page_chk_free(&page, &chk1);
 
-		ASSERT_EQ(chk.ptr, page.available, "Must be equal");
+		ASSERT_EQ(chk1.ptr, page.available, "Must be equal");
 		ASSERT_EQ(page.available, PAGEPTR_AVAILABLE_ADDR(page.ptr),
 			  "Must be equal");
 		
@@ -169,9 +188,9 @@ TESTCASE(TestMem) {
 		/* ASSERT_GT(page.end, addr); */
 		ASSERT_LT(addr, page.available);
 
-		Chk_T chk = CHKPTR_FETCH_CHK_T((uint8_t *) addr
+		Chk_T chk1 = CHKPTR_FETCH_CHK_T((uint8_t *) addr
 					       - sizeof(uint64_t));
-		ASSERT_GE(chk.capacity, 10);
+		ASSERT_GE(chk1.capacity, 10);
 		Page_free(&page);
 		Heap_pop(&heap_pages, &Page_capacity_cmp);
 				
@@ -276,7 +295,7 @@ TESTCASE(TestMem) {
 	}
 
 	TEST(BigAllocations) {
-		extern long mem_find_chks_page(const uint8_t *ptr);
+		ASSERT_EQ(heap_pages.size, 0);
 		uint8_t *kilob;
 		uint8_t *megab;
 		uint8_t *gigab;
@@ -287,28 +306,40 @@ TESTCASE(TestMem) {
 				gigab = mem_alloc(GIGABYTE);
 			}, "Shouldn't throw anything");
 
-		int page_index = mem_find_chks_page(gigab - sizeof(uint64_t));
-		ASSERT_EQ(page_index, 0);
-		
-		Page_T page = PAGEPTR_FETCH_PAGE_T(heap_pages.buff[page_index]);
-		
-		ASSERT_GT(page.capacity, GIGABYTE);
-		ASSERT_EQ(heap_pages.size, 3, "Must be 3 pages");
+		ASSERT_EQ(heap_pages.size, 3);
 
+		int page_kilo_index = Page_find_chks_page(kilob - sizeof(uint64_t));
+		Page_T page_kilo = PAGEPTR_FETCH_PAGE_T(pageptrs.buff[page_kilo_index]);
+		INFO("Kilo: %i -> %zu", page_kilo_index, page_kilo.capacity);
+
+		int page_mega_index = Page_find_chks_page(megab - sizeof(uint64_t));
+		Page_T page_mega = PAGEPTR_FETCH_PAGE_T(pageptrs.buff[page_mega_index]);
+		INFO("Mega: %i -> %zu", page_mega_index, page_mega.capacity);
+
+		int page_giga_index = Page_find_chks_page(gigab - sizeof(uint64_t));
+		Page_T page_giga = PAGEPTR_FETCH_PAGE_T(pageptrs.buff[page_giga_index]);
+		INFO("Giga: %i -> %zu", page_giga_index, page_giga.capacity);
+		
+		ASSERT_EQ(page_giga.size, aling_to_mul_4kb(GIGABYTE + 2 * sizeof(uint64_t)));
+		ASSERT_EQ(page_mega.size, aling_to_mul_4kb(2 * MEGABYTE + 2 * sizeof(uint64_t)));
+		ASSERT_EQ(page_kilo.size, aling_to_mul_4kb(6 * KILOBYTE + 2 * sizeof(uint64_t)));
+		
+		int index = Page_find_chks_page(gigab - sizeof(uint64_t));
+		ASSERT_NEQ(index, 2);
+		
 		mem_free(gigab);
-		ASSERT_EQ(heap_pages.size, 2, "Must be 3 pages");
-
-		page_index = mem_find_chks_page(megab - sizeof(uint64_t));
-		ASSERT_EQ(page_index, 0);
-
+		ASSERT_EQ(heap_pages.size, 2);
+		index = Page_find_chks_page(megab - sizeof(uint64_t));
+		ASSERT_EQ(index, 0);
+		
 		mem_free(megab);
-		ASSERT_EQ(heap_pages.size, 1, "Must be 3 pages");
+		ASSERT_EQ(heap_pages.size, 1);
 
-		page_index = mem_find_chks_page(kilob - sizeof(uint64_t));
-		ASSERT_EQ(page_index, 0);
-
+		index = Page_find_chks_page(kilob - sizeof(uint64_t));
+		ASSERT_EQ(index, 0);
+		
 		mem_free(kilob);
-		ASSERT_EQ(heap_pages.size, 0, "Must be 3 pages");
+		ASSERT_EQ(heap_pages.size, 0);
 	}
 } ENDTESTCASE
 
@@ -353,13 +384,159 @@ TESTCASE(NonFunctionalTest) {
 		end = clock();
 		custom_time = ((double) (end - start)) / CLOCKS_PER_SEC;
 
-		ASSERT_NEAR(malloc_time, custom_time, 0.0001);
-	}	
+		EXPECT_NEAR(malloc_time, custom_time, 0.0001);
+		printf("malloc is %0.1f%% faster than mine \n", (custom_time - malloc_time) / custom_time * 100.0);
+	}
 } ENDTESTCASE
+
+
+
+TESTCASE(ChunkCheckSum) {
+	TEST(SimpleCheck) {
+		uint8_t *addr1 = mem_alloc(10);
+		uint8_t *addr2 = mem_alloc(20);
+		
+		mem_free(addr1);
+		
+		Chk_T chk1 = CHKPTR_FETCH_CHK_T(addr1 - sizeof(uint64_t));
+		ASSERT_EQ(Chk_verify_checksum(&chk1), 1, "Should be mark as freeded");
+
+		uint8_t *addr3 = mem_alloc(10);
+		EXPECT_EQ(addr1, addr3);
+		
+		Chk_T chk2 = CHKPTR_FETCH_CHK_T(addr3 - sizeof(uint64_t));
+		ASSERT_EQ(Chk_verify_checksum(&chk2), 0, "Should be mark as freeded");
+
+		mem_free(addr3);
+
+		Chk_T chk3 = CHKPTR_FETCH_CHK_T(addr3 - sizeof(uint64_t));
+		ASSERT_EQ(Chk_verify_checksum(&chk3), 1, "Should be mark as freeded");
+
+		((void) addr2);
+	}
+} ENDTESTCASE
+
+
+TESTCASE(ChunkCombine) {
+	TEST(SimpleCombine) {
+		uint8_t *addr1 = mem_alloc(200);
+		uint8_t *addr2 = mem_alloc(100);
+		uint8_t *addr3 = mem_alloc(400);
+		
+		mem_free(addr1);
+		
+		Chk_T chk1 = CHKPTR_FETCH_CHK_T(addr1 - sizeof(uint64_t));
+		ASSERT_EQ(Chk_verify_checksum(&chk1), 1, "Should be mark as freeded");
+
+		mem_free(addr2);
+
+		ASSERT_EQ(heap_free_chunks.size, 2, "Should be two chunks");
+
+		Chk_T chk2 = CHKPTR_FETCH_CHK_T(addr2 - sizeof(uint64_t));
+		ASSERT_EQ(Chk_verify_checksum(&chk2), 1, "Should be mark as freeded");
+		
+		/* Here should combine the two first chunks */
+		uint8_t *addr4 = mem_alloc(300);
+		EXPECT_EQ(addr1, addr4);
+		
+		ASSERT_EQ(heap_free_chunks.size, 0, "Should be zero");
+
+		mem_free(addr3);
+		mem_free(addr4);
+
+		ASSERT_EQ(heap_free_chunks.size, 0, "Should be zero");
+	}
+
+
+	TEST(SimpleCombine2) {
+		int n = 10;
+		uint8_t *addr[n];
+		
+		for (int i = 0; i < n; i++)
+			addr[i] = mem_alloc(40 * (n - i));
+
+		EXPECT_EQ(heap_pages.size, 1, "Shuld be 1");
+
+		for (int i = 0; i < n - 1; i++)
+			mem_free(addr[i]);
+
+		ASSERT_EQ(heap_free_chunks.size, n - 1, "Should be n - 1");
+
+		Chk_T chk = CHKPTR_FETCH_CHK_T(addr[0] - sizeof(uint64_t));
+		Chk_T chk2 = CHKPTR_FETCH_CHK_T(Heap_top(&heap_free_chunks));
+		ASSERT_EQ(chk.capacity, chk2.capacity);
+
+		int m = 40 * (((n - 1) * (n - 2)) / 2);
+		uint8_t *combined = mem_alloc(m);
+
+		Chk_T chk3 = CHKPTR_FETCH_CHK_T(combined - sizeof(uint64_t));
+		
+		ASSERT_EQ(chk3.end, addr[9] - sizeof(uint64_t));
+		
+		((void) combined);
+	}
+} ENDTESTCASE
+
+
+TESTCASE(SortedArrayPageOfPtrs) {
+	TEST(SimplePageAllocation) {
+		Page_T page1, page2, page3;
+		Page_alloc(&page1, KILOBYTE);
+		Page_alloc(&page2, KILOBYTE);
+		Page_alloc(&page3, KILOBYTE);
+
+		INFO("page1: %p", page1.ptr);
+		INFO("page2: %p", page2.ptr);
+		INFO("page3: %p", page3.ptr);
+
+		INFO("pageptrs.buff[0]: %p", pageptrs.buff[0]);
+		INFO("pageptrs.buff[1]: %p", pageptrs.buff[1]);
+		INFO("pageptrs.buff[2]: %p", pageptrs.buff[2]);
+
+		ASSERT_EQ(pageptrs.size, 3);		
+		ASSERT_EQ(pageptrs.buff[0], page3.ptr);
+		ASSERT_EQ(pageptrs.buff[1], page2.ptr);
+		ASSERT_EQ(pageptrs.buff[2], page1.ptr);
+		
+		ASSERT(pageptrs.buff[0] < pageptrs.buff[1]);
+		ASSERT(pageptrs.buff[1] < pageptrs.buff[2]);
+
+		Page_free(&page2);
+		ASSERT_EQ(pageptrs.buff[0], page3.ptr);
+		ASSERT_EQ(pageptrs.buff[1], page1.ptr);
+		
+		ASSERT(pageptrs.buff[0] < pageptrs.buff[1]);
+		
+		Page_free(&page3);
+		ASSERT_EQ(pageptrs.buff[0], page1.ptr);
+		
+		Page_free(&page1);
+	}
+
+
+	TEST(HardPageAllocation) {
+		int n = 100;
+		Page_T page[n];
+		
+		for (int i = 0; i < n; i++)
+			Page_alloc(&page[i], KILOBYTE);
+
+		ASSERT_EQ(pageptrs.size, n);
+
+		for (int i = 0; i < n; i++)
+			ASSERT_EQ(page[i].ptr, pageptrs.buff[n - i - 1]);
+		
+		for (int i = 0; i < n; i++)
+			Page_free(&page[i]);		
+	}
+} ENDTESTCASE
+
 
 int main(void)
 {
-	RUN(TestCaseHeap, TestPage, TestMem, NonFunctionalTest);
+	RUN(TestCaseHeap, TestPage, TestMem, ChunkCombine, ChunkCheckSum, SortedArrayPageOfPtrs,
+	    NonFunctionalTest);
+	
 	
 	return 0;
 }

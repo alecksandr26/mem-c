@@ -10,6 +10,10 @@ typedef struct {
 	int64_t size, capacity;
 } Page_T;
 
+typedef struct {
+	uint8_t *buff[HEAP_CAPACITY];
+	uint32_t size;
+} PagePtrsArray_T;
 
 #define PAGEPTR_START_ADDR(pageptr) ((uint8_t *) (pageptr))
 #define PAGEPTR_AVAILABLE_ADDR(pageptr) ((uint8_t *) *((uint64_t *) (PAGEPTR_START_ADDR(pageptr))))
@@ -25,12 +29,15 @@ typedef struct {
 
 
 extern Heap_T heap_pages;
+extern PagePtrsArray_T pageptrs;
 extern Except_T ExceptFatalPageError;
 extern int Page_capacity_cmp(const void **addr1, const void **addr2);
 extern void Page_alloc(Page_T *page, uint64_t nbytes);
 extern void Page_chk_alloc(Page_T *page, Chk_T *chk);
 extern void Page_chk_free(Page_T *page, Chk_T *chk);
 extern void Page_free(Page_T *page);
+extern int Page_find_chks_page(const uint8_t *chkptr);
+
 
 #endif
 

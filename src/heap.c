@@ -3,11 +3,59 @@
 #include "utils.h"
 #include "heap.h"
 
+static int Heap_find_recursive(const Heap_T *heap, const void *ptr, int (*cmp)(const void **addr1, const void **addr2), int curr)
+{
+	/* Inorder search */
+	if ((int) heap->size > curr && cmp((const void **) &heap->buff[curr], &ptr) >= 0) {
+		if (heap->buff[curr] == ptr)
+			return curr;
+		
+		int lpos = HEAP_LPOS(curr);
+		int lres = Heap_find_recursive(heap, ptr, cmp, lpos);
+
+		if (lres != -1)
+			return lres;
+
+		
+		int rpos = HEAP_RPOS(curr);
+		int rres = Heap_find_recursive(heap, ptr, cmp, rpos);
+
+		if (rres != -1)
+			return rres;
+	}
+	
+	return -1;
+}
+
+#ifndef NDEBUG			/* Just for my testing */
+static void Heap_verify_integrity_by_pos(const Heap_T *heap, int cpos,
+				  int (*cmp)(const void **addr1, const void **addr2))
+{
+	assert(heap, "Can't be null");
+	assert(cmp, "Can't be null");
+	assert(cpos >= 0 && cpos < (int) heap->size, "Invailed pos");
+
+	while (cpos > 0)  {
+		int ppos = HEAP_PPOS(cpos);
+		int c = (*cmp)((const void **) &heap->buff[ppos], (const void **) &heap->buff[cpos]);
+		assert(c >= 0);
+		cpos = ppos;
+	}
+}
+
+void Heap_verify_integrity(const Heap_T *heap, int (*cmp)(const void **addr1, const void **addr2))
+{
+	for (int i = 0; i < (int) heap->size; i++)
+		Heap_verify_integrity_by_pos(heap, i, cmp);
+}
+#endif
+
 void Heap_push(Heap_T *heap, const void *ptr, int (*cmp)(const void **addr1, const void **addr2))
 {
 	assert(heap, "Can't be null");
 	assert(ptr, "Can't be null");
 	assert(cmp, "Can't be null");
+
 
 	heap->buff[heap->size] = (void *) ptr;
 
@@ -38,22 +86,24 @@ const void *Heap_top(const Heap_T *heap)
 	return heap->buff[0];
 }
 
+
 int Heap_find(const Heap_T *heap, const void *ptr, int (*cmp)(const void **addr1, const void **addr2))
 {
 	assert(heap, "Can't be null");
 	assert(ptr, "Can't be null");
 
-	/* TODO: Make this O(log(n)) */
-	for (uint32_t i = 0; i < heap->size; i++)
-		if (heap->buff[i] == ptr)
-			return i;
-	return -1;
+	/* Old version */
+	/* for (uint32_t i = 0; i < heap->size; i++) */
+	/* 	if (heap->buff[i] == ptr) */
+	/* 		return i; */
+		
+	return Heap_find_recursive(heap, ptr, cmp, 0);
 }
 
 void Heap_rem(Heap_T *heap, int i, int (*cmp)(const void **addr1, const void **addr2))
 {
 	assert(heap, "Can't be null");
-	assert(i >= 0 && i < (int) heap->size, "Invalid i");
+	assert(i >= 0 && i < (int) heap->size, "Invalid heap index");
 	assert(cmp, "Can't be null");
 
 	int ppos = i;
@@ -78,5 +128,15 @@ void Heap_rem(Heap_T *heap, int i, int (*cmp)(const void **addr1, const void **a
 
 		HEAP_SWAP(buff[ppos], buff[mpos]);
 		ppos = mpos;
+	}
+
+	if (ppos == i) {
+		int cpos = ppos;
+		ppos = HEAP_PPOS(cpos);		
+		while (cpos > 0 && (*cmp)((const void **) &buff[cpos], (const void **) &buff[ppos]) > 0)  {
+			HEAP_SWAP(buff[ppos], buff[cpos]);
+			cpos = ppos;
+			ppos = HEAP_PPOS(cpos);			
+		}
 	}
 }

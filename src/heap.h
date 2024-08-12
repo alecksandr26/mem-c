@@ -1,7 +1,7 @@
 #ifndef HEAP_H
 #define HEAP_H
 
-#define HEAP_CAPACITY 1024
+#define HEAP_CAPACITY 4 * 1024
 
 #define HEAP_LPOS(X) (((X) * 2) + 1)
 #define HEAP_RPOS(X) (((X) * 2) + 2)
@@ -30,6 +30,7 @@ extern void *Heap_pop(Heap_T *heap, int (*cmp)(const void **addr1, const void **
 extern const void *Heap_top(const Heap_T *heap);
 extern int Heap_find(const Heap_T *heap, const void *ptr, int (*cmp)(const void **addr1, const void **addr2));
 extern void Heap_rem(Heap_T *heap, int i, int (*cmp)(const void **addr1, const void **addr2));
+extern void Heap_verify_integrity(const Heap_T *heap, int (*cmp)(const void **addr1, const void **addr2));
 
 #endif
 

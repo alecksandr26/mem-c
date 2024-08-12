@@ -12,6 +12,8 @@ typedef struct {
 	int32_t size, capacity;
 } Chk_T;
 
+
+
 #define CHKPTR_PTR(chkptr) ((uint8_t *) (chkptr))
 #define CHKPTR_RADDR(chkptr) (CHKPTR_PTR(chkptr) + sizeof(uint64_t))
 #define CHKPTR_CAPACITY(chkptr) (*((uint64_t *) (CHKPTR_PTR(chkptr))))
@@ -24,10 +26,18 @@ typedef struct {
 			.end = CHKPTR_END((chkptr))			\
 			}
 
+
+#define CHK_CHECK_SUM_SIZE 32
+
+
 extern Except_T ExceptOverFreededChunks;
 extern int CHK_MIN_CHUNK_SIZE;
 extern Heap_T heap_free_chunks;
+extern void Chk_put_checksum(Chk_T *chk);
+extern int Chk_verify_checksum(Chk_T *chk);
+extern void Chk_rem_checksum(Chk_T *chk);
 extern int Chk_capacity_cmp(const void **chk1, const void **chk2);
+extern void Chk_combine_with_freeded_neighbor(Chk_T *chk, const uint8_t *ava_pageptr);
 
 #endif
 

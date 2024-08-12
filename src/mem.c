@@ -15,17 +15,6 @@ Except_T ExceptInvalidNBytes = INIT_EXCEPT_T("Invalid number of bytes");
 Except_T ExceptInvalidAddr = INIT_EXCEPT_T("Invalid address");
 Except_T ExceptCorruptedAddr = INIT_EXCEPT_T("Corrupted address");
 
-int mem_find_chks_page(const uint8_t *ptr)
-{
-	for (size_t i = 0; i < heap_pages.size; i++) {
-		Page_T page = PAGEPTR_FETCH_PAGE_T(heap_pages.buff[i]);
-		if (page.ptr < ptr && ptr < page.end)
-			return i;
-	}
-
-	return -1;
-}
-
 void *mem_alloc(unsigned long nbytes)
 {
 	if (nbytes == 0)
@@ -37,7 +26,13 @@ void *mem_alloc(unsigned long nbytes)
 	Chk_T chk = {
 		.size = nbytes
 	};
-
+	
+	if (heap_free_chunks.size > 0) {
+		Chk_T top = CHKPTR_FETCH_CHK_T(Heap_top(&heap_free_chunks));
+		int index_page = Page_find_chks_page(top.ptr);
+		Chk_combine_with_freeded_neighbor(&top, PAGEPTR_AVAILABLE_ADDR(pageptrs.buff[index_page]));
+	}
+	
 	if (heap_free_chunks.size > 0
 	    && CHKPTR_SIZE(Heap_top(&heap_free_chunks)) >= nbytes) {
 		uint8_t *frag_chkptr = Heap_pop(&heap_free_chunks, &Chk_capacity_cmp);
@@ -45,21 +40,27 @@ void *mem_alloc(unsigned long nbytes)
 		frag_chk.capacity -= chk.size;
 		frag_chk.size -= chk.size;
 		if (frag_chk.size >= CHK_MIN_CHUNK_SIZE) {
+			/* TODO: Use the lower addressed chk and push to free the higher */
 			chk.ptr = (uint8_t *) frag_chk.raddr + frag_chk.capacity;
 			chk.capacity = chk.size - sizeof(uint64_t);
 			
-			/* Update the metadata */
 			*((uint64_t *) chk.ptr) = chk.capacity;
 			*((uint64_t *) frag_chk.ptr) = frag_chk.capacity;
+			chk.raddr = chk.ptr + sizeof(uint64_t);
 			
 			assert(CHKPTR_CAPACITY(chk.ptr) == (uint32_t) chk.capacity);
 			assert(CHKPTR_CAPACITY(frag_chk.ptr) == (uint32_t) \
 			       frag_chk.capacity);
+
 			
+			Chk_put_checksum(&frag_chk);
 			Heap_push(&heap_free_chunks, frag_chk.ptr, &Chk_capacity_cmp);
+			
+			Chk_rem_checksum(&chk);
 			return (void *) chk.raddr;
 		}
-		
+
+		Chk_rem_checksum(&frag_chk);
 		return (void *) frag_chk.raddr;
 	}
 
@@ -67,15 +68,16 @@ void *mem_alloc(unsigned long nbytes)
 	Page_T page;
 	if (heap_pages.size > 0
 	    && PAGEPTR_CAPACITY(Heap_top(&heap_pages)) > nbytes) {
-		Page_T root_page = PAGEPTR_FETCH_PAGE_T(Heap_top(&heap_pages));
+		uint8_t *root_page_ptr = Heap_pop(&heap_pages, &Page_capacity_cmp);
+		Page_T root_page = PAGEPTR_FETCH_PAGE_T(root_page_ptr);
 		page = root_page;
 	} else {
 		Page_alloc(&page, nbytes);
-		Heap_push(&heap_pages, page.ptr, &Page_capacity_cmp);
 	}
 
 	Page_chk_alloc(&page, &chk);
 	
+	Heap_push(&heap_pages, page.ptr, &Page_capacity_cmp);
 	assert(chk.capacity > 0 && chk.capacity < chk.size);
 	assert(chk.ptr > page.ptr);
 	assert(chk.raddr < page.end);
@@ -91,24 +93,28 @@ void mem_free(void *addr)
 	uint8_t *chkptr = (uint8_t *) addr - sizeof(uint64_t);
 	Chk_T chk = CHKPTR_FETCH_CHK_T(chkptr);
 
-	int page_index = mem_find_chks_page(chkptr);
+	int page_index = Page_find_chks_page(chkptr);
 	if (page_index == -1)
 		RAISE(ExceptInvalidAddr, "Can't free an invalid addr");
 
-	Page_T page = PAGEPTR_FETCH_PAGE_T(heap_pages.buff[page_index]);
+	Page_T page = PAGEPTR_FETCH_PAGE_T(pageptrs.buff[page_index]);
 	if (chk.capacity == 0 || chk.size >= page.size)
 		RAISE(ExceptCorruptedAddr, "The reserved addr has an invalid capacity");
 
 	if (page.available <= chk.ptr
-	    || Heap_find(&heap_free_chunks, chk.ptr, &Chk_capacity_cmp) != -1)
+	    || Chk_verify_checksum(&chk) == 1)
 		RAISE(ExceptInvalidAddr, "Address already freed");
-	
+
+	page_index = Heap_find(&heap_pages, page.ptr,&Page_capacity_cmp);
+	Heap_rem(&heap_pages, page_index, &Page_capacity_cmp);
 	Page_chk_free(&page, &chk);
 
 	if (page.available - 2 * sizeof(uint64_t) == page.ptr) {
-		Heap_rem(&heap_pages, page_index, &Page_capacity_cmp);
 		Page_free(&page);
+		return;
 	}
+
+	Heap_push(&heap_pages, page.ptr, &Page_capacity_cmp);
 }
 
 void *mem_ralloc(void *addr, unsigned long nbytes)
@@ -119,7 +125,7 @@ void *mem_ralloc(void *addr, unsigned long nbytes)
 	uint8_t *chkptr = (uint8_t *) addr - sizeof(uint64_t);
 	Chk_T chk = CHKPTR_FETCH_CHK_T(chkptr);
 
-	int page_index = mem_find_chks_page(chkptr);
+	int page_index = Page_find_chks_page(chkptr);
 	if (page_index == -1)
 		RAISE(ExceptInvalidAddr, "Can't free an invalid addr");
 	
@@ -142,13 +148,13 @@ void *mem_calloc(unsigned long obj_size, unsigned long nobjs)
 	return mem_alloc(obj_size * nobjs);
 }
 
-int mem_dbg_is_freeded(void *addr)
+int mem_dbg_is_freeded(const void *addr)
 {
 	uint8_t *ptr = (uint8_t *) addr - sizeof(uint64_t);
-	int page_ind = mem_find_chks_page(ptr);
+	int page_ind = Page_find_chks_page(ptr);
 	if (page_ind == -1)
 		return 1;
-	Page_T page = PAGEPTR_FETCH_PAGE_T(heap_pages.buff[page_ind]);
+	Page_T page = PAGEPTR_FETCH_PAGE_T(pageptrs.buff[page_ind]);
 	Chk_T chk = CHKPTR_FETCH_CHK_T(ptr);
 	
 	if (chk.capacity == 0 || chk.size >= page.size)
@@ -157,8 +163,7 @@ int mem_dbg_is_freeded(void *addr)
 	if (page.available <= page.ptr)
 		return 1;
 
-	int chk_ind = Heap_find(&heap_free_chunks, chk.ptr, &Chk_capacity_cmp);
-	if (chk_ind != -1)
+	if (Chk_verify_checksum(&chk) == 1)
 		return 1;
 
 	return 0;
@@ -166,7 +171,6 @@ int mem_dbg_is_freeded(void *addr)
 
 
 /* TODO: Set excetions to all the mem_dbg functions */
-
 unsigned int mem_dbg_num_pages(void)
 {
 	return heap_pages.size;
@@ -188,8 +192,7 @@ void mem_dbg_dump_pages_info(void)
 	void *buff[npages];
 
 	mem_dbg_dump_pages_buff(buff, npages);
-
-
+	
 	for (uint32_t i = 0; i < npages; i++) {
 		Page_T page = PAGEPTR_FETCH_PAGE_T(buff[i]);
 		LOG_DBG_INF("<Page: %i, ptr: %p, available: %p, end: %p, size: %lu, "
@@ -249,8 +252,7 @@ void mem_dbg_dump_chks_info_from_page(const void *page_ptr)
 	
 	for (uint32_t i = 0; i < nchks; i++) {
 		Chk_T chk = CHKPTR_FETCH_CHK_T(buff[i]);
-		int freed = Heap_find(&heap_free_chunks, (const void *) buff[i],
-				      &Chk_capacity_cmp) != -1;
+		int freed = Chk_verify_checksum(&chk) == 1;
 		
 		LOG_DBG_INF("<Chunk: %i, ptr: %p, reserved address: %p, end: %p, size: %i, "
 			    "capacity: %i, freed: %s>",
@@ -329,8 +331,7 @@ void mem_dbg_dump_chks_info(void)
 	
 	for (uint32_t i = 0; i < nchks; i++) {
 		Chk_T chk = CHKPTR_FETCH_CHK_T(buff[i]);
-		int freed = Heap_find(&heap_free_chunks, (const void *) buff[i],
-				      &Chk_capacity_cmp) != -1;
+		int freed = Chk_verify_checksum(&chk) == 1;
 		chk_max_size = MAX(chk_max_size, (uint32_t) chk.size);
 		chk_min_size = MIN(chk_min_size, (uint32_t) chk.size);
 		chk_avg_size += (double) chk.size;
@@ -339,6 +340,50 @@ void mem_dbg_dump_chks_info(void)
 			    "capacity: %i, freed: %s>",
 			    (i + 1), chk.ptr, chk.raddr, chk.end, chk.size, chk.capacity,
 			    (freed) ? "true" : "false");
+		if (freed) {
+			nfreed++;
+			nonusedmem += chk.size;
+		} else {
+			nonfreed++;
+			usedmem += chk.size;
+		}
+	}
+
+	uint32_t total_mem = 0;
+	for (uint32_t i = 0; i < npages; i++) {
+		nonusedmem += PAGEPTR_CAPACITY(heap_pages.buff[i]);
+		total_mem += PAGEPTR_SIZE(heap_pages.buff[i]);
+	}
+
+	chk_avg_size /= nchks;
+
+	LOG_DBG_INF("Stats from all pages (num pages: %u). freed chunks: %u (%.1f%%), non freed chunks: %u (%.1f%%), "
+		    "total chunks: %u,\n max chk size: %u, min chk size: %u, avg chk size: %0.1lf, not used mem: %u (%.1f%%), "
+		    "used mem: %u (%.1f%%), total mem: %u bytes",
+		    npages, nfreed, (float) nfreed * 100 / (nchks > 0 ? nchks : 1),
+		    nonfreed, (float) nonfreed * 100 / (nchks > 0 ? nchks : 1), nchks, chk_max_size, chk_min_size, chk_avg_size,
+		    nonusedmem, (float) nonusedmem * 100 / (total_mem > 0 ? total_mem : 1),
+		    usedmem, (float) usedmem * 100 / (total_mem > 0 ? total_mem : 1), total_mem);
+}
+
+void mem_dbg_dump_stats_info(void)
+{
+	uint32_t nchks = mem_dbg_num_chks();
+	uint32_t npages = mem_dbg_num_pages();
+	void *buff[nchks];
+	uint32_t nfreed = 0, nonfreed = 0, usedmem = 0, nonusedmem = 0;
+	uint32_t chk_max_size = 0, chk_min_size = UINT32_MAX;
+	double chk_avg_size = 0.0;
+	
+	mem_dbg_dump_chks_buff(buff, nchks);
+	
+	for (uint32_t i = 0; i < nchks; i++) {
+		Chk_T chk = CHKPTR_FETCH_CHK_T(buff[i]);
+		int freed = Chk_verify_checksum(&chk) == 1;
+		chk_max_size = MAX(chk_max_size, (uint32_t) chk.size);
+		chk_min_size = MIN(chk_min_size, (uint32_t) chk.size);
+		chk_avg_size += (double) chk.size;
+		
 		if (freed) {
 			nfreed++;
 			nonusedmem += chk.size;
