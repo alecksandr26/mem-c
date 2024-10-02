@@ -181,7 +181,7 @@ TESTCASE(TestMem) {
 		INFO("page.end: %p", page.end);
 		ASSERT_EQ(page.size, 4 * KILOBYTE, "Should be 4kb");
 		ASSERT(page.size % (4 * KILOBYTE) == 0, "Should be multiple of 4kb");
-		ASSERT_GT(page.end, page.ptr);
+		ASSERT_GT((void *) page.end, (void *) page.ptr);
 		ASSERT_GT(addr, page.ptr);
 
 		/* It works but my unittest lib is not working properly */

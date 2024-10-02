@@ -135,8 +135,8 @@ void Page_alloc(Page_T *page, uint64_t nbytes)
 	Page_sort_pageptrs();
 	
 	assert(PAGEPTR_AVAILABLE_ADDR(pageptr) == p.available);
-	assert(p.capacity >= nbytes - 2 * sizeof(uint64_t));
-	assert(p.size >= nbytes);
+	assert(p.capacity >= (int64_t) (nbytes - 2 * sizeof(uint64_t)));
+	assert(p.size >= (int64_t) nbytes);
 	assert(p.available == pageptr + 2 * sizeof(uint64_t));
 	assert(p.end == pageptr + nbytes);
 	assert(p.ptr == pageptr);
@@ -148,7 +148,7 @@ void Page_chk_alloc(Page_T *page, Chk_T *chk)
 	       && page->end != NULL && page->ptr != NULL, "Can't be null");
 	assert(chk != NULL, "Can't be null");
 	assert(chk->size > 0, "Can't allocate an empty chunk");
-	assert(chk->size + sizeof(uint64_t) < page->size, "The size can't overpass the page size");
+	assert(chk->size + sizeof(uint64_t) < (uint64_t) page->size, "The size can't overpass the page size");
 	assert(page->available + chk->size <= page->end, "The chunk needs to fit");
 	assert(chk->size % 8 == 0, "Must be multiple of 8");
 	assert(chk->size >= CHK_MIN_CHUNK_SIZE, "Must be gretaer or equal to the min Chunk size");
@@ -185,7 +185,7 @@ void Page_chk_free(Page_T *page, Chk_T *chk)
 	       && chk->ptr != NULL, "Can't be null");
 	assert(chk->size > 0, "Can't free an empty chunk");
 	assert(chk->capacity > 0, "Can't free an empty capacity chunk");
-	assert(chk->size + sizeof(uint64_t) < page->size, "The size can't overpass the page size");
+	assert(chk->size + (int) sizeof(uint64_t) < page->size, "The size can't overpass the page size");
 	assert(chk->size % 8 == 0, "Must be multiple of 8");
 	assert(chk->size >= CHK_MIN_CHUNK_SIZE, "Must be gretaer or equal to the min Chunk size");
 	

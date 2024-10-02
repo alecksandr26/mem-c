@@ -30,7 +30,7 @@ extern void *Heap_pop(Heap_T *heap, int (*cmp)(const void **addr1, const void **
 extern const void *Heap_top(const Heap_T *heap);
 extern int Heap_find(const Heap_T *heap, const void *ptr, int (*cmp)(const void **addr1, const void **addr2));
 extern void Heap_rem(Heap_T *heap, int i, int (*cmp)(const void **addr1, const void **addr2));
-extern void Heap_verify_integrity(const Heap_T *heap, int (*cmp)(const void **addr1, const void **addr2));
+extern int Heap_verify_integrity(const Heap_T *heap, int (*cmp)(const void **addr1, const void **addr2));
 
 #endif
 

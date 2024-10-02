@@ -27,8 +27,8 @@ static int Heap_find_recursive(const Heap_T *heap, const void *ptr, int (*cmp)(c
 	return -1;
 }
 
-#ifndef NDEBUG			/* Just for my testing */
-static void Heap_verify_integrity_by_pos(const Heap_T *heap, int cpos,
+
+static int Heap_verify_integrity_by_pos(const Heap_T *heap, int cpos,
 				  int (*cmp)(const void **addr1, const void **addr2))
 {
 	assert(heap, "Can't be null");
@@ -38,17 +38,21 @@ static void Heap_verify_integrity_by_pos(const Heap_T *heap, int cpos,
 	while (cpos > 0)  {
 		int ppos = HEAP_PPOS(cpos);
 		int c = (*cmp)((const void **) &heap->buff[ppos], (const void **) &heap->buff[cpos]);
-		assert(c >= 0);
+		if (c < 0)
+			return 1;
 		cpos = ppos;
 	}
+
+	return 0;
 }
 
-void Heap_verify_integrity(const Heap_T *heap, int (*cmp)(const void **addr1, const void **addr2))
+int Heap_verify_integrity(const Heap_T *heap, int (*cmp)(const void **addr1, const void **addr2))
 {
 	for (int i = 0; i < (int) heap->size; i++)
-		Heap_verify_integrity_by_pos(heap, i, cmp);
+		if (Heap_verify_integrity_by_pos(heap, i, cmp))
+			return 1;
+	return 0;
 }
-#endif
 
 void Heap_push(Heap_T *heap, const void *ptr, int (*cmp)(const void **addr1, const void **addr2))
 {
