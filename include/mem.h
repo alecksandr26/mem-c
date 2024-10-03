@@ -1,17 +1,20 @@
 #ifndef MEM_H
 #define MEM_H
 
-/* TODO: Investigate how to get a better performance in mem_find_chks_page */
+/* TODO: Investigate how to get a better performance in mem_find_chks_page to avoid O(n * log n) */
 /* TODO: Make better cheksum to avoid possibly overwrittes from the user */
 /* TODO: Add more metadata to the chunk to combine better the chunks */
 /* TODO: Add an aligned alloc (Optional) */
 /* TODO: Garbage collector */
-/* TODO: Areana functionality */
+/* TODO: Areana functionality, where the user give us like the space where to manage the memory */
 
 #include <except.h>
 
 #define NEW(ptr) ptr = mem_alloc(sizeof(*ptr))
-#define FREE(ptr) mem_free(ptr)
+#define FREE(ptr) do {				\
+		mem_free(ptr);			\
+		ptr = NULL;			\
+	} while (0)
 
 extern Except_T ExceptInvalidNBytes;
 extern Except_T ExceptInvalidAddr;
@@ -36,7 +39,7 @@ typedef struct {
 	double usedmem_p, nonusedmem_p, usedmem_p_byu, nonusedmem_p_byu;
 } MemStats_T;
 
-extern Except_T ExceptCorruptedDS;
+extern Except_T ExceptCorruptedHeapDS;
 extern int mem_dbg_is_freeded(const void *addr);
 extern void mem_dbg_fetch_mem_stats(MemStats_T *stats, int verbose, int log_fd);
 extern void mem_dbg_verify_ds_integrity(void);

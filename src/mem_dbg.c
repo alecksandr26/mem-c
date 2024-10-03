@@ -16,7 +16,7 @@
 #include "heap.h"
 #include "chk.h"
 
-Except_T ExceptCorruptedDS = INIT_EXCEPT_T("Corrupted core data structure");
+Except_T ExceptCorruptedHeapDS = INIT_EXCEPT_T("Corrupted core data structure");
 
 /* Simple print statements debug functions */
 
@@ -256,10 +256,10 @@ void mem_dbg_verify_ds_integrity(void)
 
 	damage = Heap_verify_integrity(&heap_pages, &Page_capacity_cmp);
 	if (damage)
-		RAISE(ExceptCorruptedDS, "Fatal error probably because of a buffer overflow issue");
+		RAISE(ExceptCorruptedHeapDS, "Fatal error probably because of a buffer overflow issue");
 
 	damage = Heap_verify_integrity(&heap_free_chunks, &Chk_capacity_cmp);
 	if (damage)
-		RAISE(ExceptCorruptedDS, "Fatal error probably because of a buffer overflow issue");
+		RAISE(ExceptCorruptedHeapDS, "Fatal error probably because of a buffer overflow issue");
 }
 

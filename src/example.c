@@ -19,7 +19,6 @@ struct {
 	.size = 0
 };
 
-
 void add_linked_list_node(int val)
 {
 	NodeList *new_node;
