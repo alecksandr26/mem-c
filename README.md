@@ -1,5 +1,5 @@
 
-# mem-c: A Simple Memory Allocator
+# Mem C (mem-c)
 
 ## Table of Contents
 1. [Overview](#overview)
@@ -12,7 +12,7 @@
 
 ## Overview
 
-**mem-c** is a simple memory allocator that uses a heap data structure to manage dynamic memory allocation. The current implementation has a worst-case time complexity of `O(n * log n)` for chunk searches, but in average cases, it achieves `O(log n)` runtimes.
+**mem-c** is a simple memory allocator that uses a heap data structures to manage dynamic memory allocation. The current implementation has a worst-case time complexity of `O(n * log n)` for chunk searches, but in average cases, it achieves `O(log n)` runtimes.
 
 The allocator is designed to support various memory management features, including metadata management, chunk merging, and future plans for more sophisticated functionalities like garbage collection and arenas (user-defined memory spaces). The project is still evolving, and further optimizations are planned.
 
