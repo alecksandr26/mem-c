@@ -20,7 +20,7 @@ The allocator is designed to support various memory management features, includi
 
 At the moment, this package is not yet available in the AUR but may be in the future. For now, you can install **mem-c** manually via the following steps:
 
-1. Clone the project:
+1. Clone the project or download a relesed version of the project:
    ```bash
    git clone <repository-url>
    cd mem-c
