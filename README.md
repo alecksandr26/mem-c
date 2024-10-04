@@ -12,7 +12,7 @@
 
 ## Overview
 
-**mem-c** is a simple memory allocator that uses a heap data structure with the **mmap** Linux syscall to manage dynamic memory allocation. The current implementation has a worst-case time complexity of `O(n * log n)` for chunk searches, but in average cases, it achieves `O(log n)` runtimes.
+**mem-c** is a simple memory allocator that uses a heap data structure with the **mmap** Linux syscall to manage dynamic memory allocation, *just for educational purpose*. The current implementation has a worst-case time complexity of `O(n * log n)` for chunk searches, but in average cases, it achieves `O(log n)` runtimes.
 
 The allocator is designed to support various memory management features, memory pagination, chunk merging, and future plans for more sophisticated functionalities like garbage collection and arenas (user-defined memory spaces). The project is still evolving, and further optimizations are planned.
 
@@ -33,8 +33,19 @@ At the moment, this package is not yet available in the AUR but may be in the fu
    makepkg -si
    ```
 
-This will compile the project and install it on your system.
+This will compile the project and install it on your Arch Linux system.
+If you are using a different distribution, you can run:
 
+1. Run `make` with the compilation
+   ```
+   make compile
+   ```
+2. Then, install the header file and the library:
+   ```
+   mv include/mem.h /path/you/want/to/install
+   mv build/lib/libmem.so /path/you/want/to/install
+   ```
+   
 ## Getting Started
 
 To get started using **mem-c**, include the `mem.h` header in your project and follow the examples below.
@@ -46,16 +57,24 @@ To allocate memory for a pointer and free it after usage:
 ```c
 #include <mem.h>
 
-int main() {
-    int *ptr;
+struct Person {
+    char name[100];
+    int age;
+};
 
-    // Allocate memory for an integer
+int main(void)
+{
+    strcut Person *ptr;
+
+    // Allocate memory for a new struct Person, with the macro `NEW`
     NEW(ptr);
 
     // Use the allocated memory
-    *ptr = 42;
+    ptr->age = 10;
 
-    // Free the allocated memory
+    // More code here ...
+
+    // Free the allocated memory, with the macro `FREE`
     FREE(ptr);
 
     return 0;
@@ -76,14 +95,19 @@ Example usage:
 ```c
 #include <mem.h>
 
-int main() {
+int main(void)
+{
     int *array;
 
     // Allocate memory for an array of 10 integers, initialized to zero
     array = mem_calloc(sizeof(int), 10);
 
+    // More code here ...
+
     // Resize the memory block
     array = mem_ralloc(array, sizeof(int) * 20);
+
+    // More code here ...
 
     // Free the allocated memory
     mem_free(array);
@@ -98,21 +122,35 @@ In debug mode (enabled when `NDEBUG` is not defined), **mem-c** offers additiona
 
 - `mem_dbg_fetch_mem_stats`: Retrieves statistics about memory usage and chunks.
 - `mem_dbg_verify_ds_integrity`: Verifies the integrity of the heap data structure.
-- `mem_dbg_is_freeded`: Checks if a specific address has already been freed.
+- `mem_dbg_is_freeded`: Checks if a specific address has already been freed, useful for asserting addresses.
 
 Debugging example:
 
 ```c
 #include <mem.h>
 
-int main() {
+
+void foo(void *ptr)
+{
+    assert(!mem_dbg_is_freeded(ptr), "Should be able to be used");
+
+    // Do something with that pointer ...
+}
+
+
+int main(void)
+{
     MemStats_T stats;
+
+    // Several allocations here ...
 
     // Fetch memory stats
     mem_dbg_fetch_mem_stats(&stats, 1, 1);
 
-    // Verify data structure integrity
+    // Verify data structures integrity
     mem_dbg_verify_ds_integrity();
+
+    // Free all the allocs ...
 
     return 0;
 }
