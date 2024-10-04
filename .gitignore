@@ -5,3 +5,11 @@ GTAGS
 
 gmon.out
 
+
+*.zst
+*.tar.gz
+*.tar
+*.gz
+pkg/*
+
+*.out

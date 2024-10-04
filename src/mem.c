@@ -145,6 +145,11 @@ void *mem_calloc(unsigned long obj_size, unsigned long nobjs)
 {
 	if (obj_size == 0 || nobjs == 0)
 		RAISE(ExceptInvalidNBytes, "Can't alloc zero objs (obj_size = 0, or nobjs = 0)");
+
+	void *ptr = mem_alloc(obj_size * nobjs);
+
+	/* Set the meomry chunk in zeros */
+	memset(ptr, 0, obj_size * nobjs);
 	
-	return mem_alloc(obj_size * nobjs);
+	return ptr;
 }
