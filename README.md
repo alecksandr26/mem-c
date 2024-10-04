@@ -126,7 +126,7 @@ In debug mode (enabled when `NDEBUG` is not defined), **mem-c** offers additiona
   - Level 2 will print all pages and their information.
   - Level 3 will print each allocated chunk.
 
-  The verbosity is given as the second argument, and the third argument will be the file descriptor.
+  The *verbosity* is given as the *second argument*, and the *third* argument will be the *file descriptor*.
 
 - `mem_dbg_verify_ds_integrity`: Verifies the integrity of the heap data structure.
 - `mem_dbg_is_freeded`: Checks if a specific address has already been freed, useful for asserting addresses.
@@ -151,7 +151,7 @@ int main(void)
 
     // Several allocations here ...
 
-    // Fetch memory stats, the second argument refers to the verbosity 
+    // Fetch memory stats. This will log information at verbosity level 1 and output it to file descriptor 1 (stdout).
     mem_dbg_fetch_mem_stats(&stats, 1, 1);
 
     // Verify data structures integrity
