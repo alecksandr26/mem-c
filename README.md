@@ -42,8 +42,8 @@ If you are using a different distribution, you can run:
    ```
 2. Then, install the header file and the library:
    ```
-   mv include/mem.h /path/you/want/to/install
-   mv build/lib/libmem.so /path/you/want/to/install
+   cp include/mem.h /path/you/want/to/install
+   cp build/lib/libmem.so /path/you/want/to/install
    ```
    
 ## Getting Started
