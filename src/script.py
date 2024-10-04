@@ -2,6 +2,7 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 
 # Sample log data with 'non used memory by user'
 log_data = open("data.txt").read()
@@ -52,100 +53,80 @@ non_used_memory_percent = np.array(non_used_mem_percentages)
 freeded_chunks_percent = np.array(freeded_chunks_percentages)
 non_freeded_chunks_percent = np.array(non_freeded_chunks_percentages)
 
-# Step 3: Perform Linear Regression for time (allocs * size vs. time)
-X_time = alloc_times.reshape(-1, 1)
-y_time = elapsed_time
+# Step 3: Apply Polynomial Features (degree 2 for example)
+poly = PolynomialFeatures(degree=2)
+X_time_poly = poly.fit_transform(alloc_times.reshape(-1, 1))
 
-model_time = LinearRegression()
-model_time.fit(X_time, y_time)
+# Step 4: Perform Polynomial Regression for time (allocs * size vs. time)
+model_time_poly = LinearRegression()
+model_time_poly.fit(X_time_poly, elapsed_time)
 
-slope_time = model_time.coef_[0]
-intercept_time = model_time.intercept_
+# Step 5: Perform Polynomial Regression for non-used memory
+model_memory_poly = LinearRegression()
+model_memory_poly.fit(X_time_poly, non_used_memory)
 
-# Step 4: Perform Linear Regression for non-used memory (allocs * size vs. non-used memory)
-X_memory = alloc_times.reshape(-1, 1)
-y_memory = non_used_memory
+# Step 6: Perform Polynomial Regression for non-used memory percentage
+model_memory_percent_poly = LinearRegression()
+model_memory_percent_poly.fit(X_time_poly, non_used_memory_percent)
 
-model_memory = LinearRegression()
-model_memory.fit(X_memory, y_memory)
+# Step 7: Perform Polynomial Regression for freeded chunks percentage
+model_freeded_chunks_poly = LinearRegression()
+model_freeded_chunks_poly.fit(X_time_poly, freeded_chunks_percent)
 
-slope_memory = model_memory.coef_[0]
-intercept_memory = model_memory.intercept_
-
-# Step 5: Perform Linear Regression for non-used memory percentage (allocs * size vs. non-used memory percentage)
-y_memory_percent = non_used_memory_percent
-model_memory_percent = LinearRegression()
-model_memory_percent.fit(X_memory, y_memory_percent)
-
-slope_memory_percent = model_memory_percent.coef_[0]
-intercept_memory_percent = model_memory_percent.intercept_
-
-# Step 6: Perform Linear Regression for freeded chunks percentage
-y_freeded_chunks = freeded_chunks_percent
-model_freeded_chunks = LinearRegression()
-model_freeded_chunks.fit(X_memory, y_freeded_chunks)
-
-slope_freeded_chunks = model_freeded_chunks.coef_[0]
-intercept_freeded_chunks = model_freeded_chunks.intercept_
-
-# Step 7: Perform Linear Regression for non-freeded chunks percentage
-y_non_freeded_chunks = non_freeded_chunks_percent
-model_non_freeded_chunks = LinearRegression()
-model_non_freeded_chunks.fit(X_memory, y_non_freeded_chunks)
-
-slope_non_freeded_chunks = model_non_freeded_chunks.coef_[0]
-intercept_non_freeded_chunks = model_non_freeded_chunks.intercept_
+# Step 8: Perform Polynomial Regression for non-freeded chunks percentage
+model_non_freeded_chunks_poly = LinearRegression()
+model_non_freeded_chunks_poly.fit(X_time_poly, non_freeded_chunks_percent)
 
 # Visualize the results
 plt.figure(figsize=(18, 8))
 
-# Plot 1: allocs * alloc size vs. elapsed time
+# Plot 1: allocs * alloc size vs. elapsed time (Polynomial fit)
 plt.subplot(2, 3, 1)
 plt.scatter(alloc_times, elapsed_time, color='blue')
-plt.plot(alloc_times, model_time.predict(X_time), color='red', linewidth=2)
+plt.plot(alloc_times, model_time_poly.predict(X_time_poly), color='red', linewidth=2)
 plt.xlabel('Allocations * Alloc Size')
 plt.ylabel('Elapsed Time')
-plt.title('Allocations * Alloc Size vs Elapsed Time')
+plt.title('Allocations * Alloc Size vs Elapsed Time (Polynomial)')
 
-# Plot 2: allocs * alloc size vs. non-used memory by user
+# Plot 2: allocs * alloc size vs. non-used memory by user (Polynomial fit)
 plt.subplot(2, 3, 2)
 plt.scatter(alloc_times, non_used_memory, color='green')
-plt.plot(alloc_times, model_memory.predict(X_memory), color='orange', linewidth=2)
+plt.plot(alloc_times, model_memory_poly.predict(X_time_poly), color='orange', linewidth=2)
 plt.xlabel('Allocations * Alloc Size')
 plt.ylabel('Non Used Memory by User')
-plt.title('Allocations * Alloc Size vs Non Used Memory')
+plt.title('Allocations * Alloc Size vs Non Used Memory (Polynomial)')
 
-# Plot 3: allocs * alloc size vs. non-used memory percentage
+# Plot 3: allocs * alloc size vs. non-used memory percentage (Polynomial fit)
 plt.subplot(2, 3, 3)
 plt.scatter(alloc_times, non_used_memory_percent, color='purple')
-plt.plot(alloc_times, model_memory_percent.predict(X_memory), color='pink', linewidth=2)
+plt.plot(alloc_times, model_memory_percent_poly.predict(X_time_poly), color='pink', linewidth=2)
 plt.xlabel('Allocations * Alloc Size')
 plt.ylabel('Non Used Memory Percentage')
-plt.title('Allocations * Alloc Size vs Non Used Memory Percentage')
+plt.title('Allocations * Alloc Size vs Non Used Memory Percentage (Polynomial)')
 
-# Plot 4: allocs * alloc size vs. freeded chunks percentage
+# Plot 4: allocs * alloc size vs. freeded chunks percentage (Polynomial fit)
 plt.subplot(2, 3, 4)
 plt.scatter(alloc_times, freeded_chunks_percent, color='cyan')
-plt.plot(alloc_times, model_freeded_chunks.predict(X_memory), color='blue', linewidth=2)
+plt.plot(alloc_times, model_freeded_chunks_poly.predict(X_time_poly), color='blue', linewidth=2)
 plt.xlabel('Allocations * Alloc Size')
 plt.ylabel('Freeded Chunks Percentage')
-plt.title('Allocations * Alloc Size vs Freeded Chunks Percentage')
+plt.title('Allocations * Alloc Size vs Freeded Chunks Percentage (Polynomial)')
 
-# Plot 5: allocs * alloc size vs. non-freeded chunks percentage
+# Plot 5: allocs * alloc size vs. non-freeded chunks percentage (Polynomial fit)
 plt.subplot(2, 3, 5)
 plt.scatter(alloc_times, non_freeded_chunks_percent, color='magenta')
-plt.plot(alloc_times, model_non_freeded_chunks.predict(X_memory), color='yellow', linewidth=2)
+plt.plot(alloc_times, model_non_freeded_chunks_poly.predict(X_time_poly), color='yellow', linewidth=2)
 plt.xlabel('Allocations * Alloc Size')
 plt.ylabel('Non Freeded Chunks Percentage')
-plt.title('Allocations * Alloc Size vs Non Freeded Chunks Percentage')
+plt.title('Allocations * Alloc Size vs Non Freeded Chunks Percentage (Polynomial)')
 
 plt.tight_layout()
 
 # Print the regression equations
-print(f"Elapsed Time = {slope_time:.4f} * (n allocs * alloc size) + {intercept_time:.4f}")
-print(f"Non Used Memory = {slope_memory:.4f} * (n allocs * alloc size) + {intercept_memory:.4f}")
-print(f"Non Used Memory Percentage = {slope_memory_percent:.4f} * (n allocs * alloc size) + {intercept_memory_percent:.4f}")
-print(f"Freeded Chunks Percentage = {slope_freeded_chunks:.4f} * (n allocs * alloc size) + {intercept_freeded_chunks:.4f}")
-print(f"Non Freeded Chunks Percentage = {slope_non_freeded_chunks:.4f} * (n allocs * alloc size) + {intercept_non_freeded_chunks:.4f}")
+print(f"Elapsed Time = Polynomial Fit")
+print(f"Non Used Memory = Polynomial Fit")
+print(f"Non Used Memory Percentage = Polynomial Fit")
+print(f"Freeded Chunks Percentage = Polynomial Fit")
+print(f"Non Freeded Chunks Percentage = Polynomial Fit")
 
 plt.show()
