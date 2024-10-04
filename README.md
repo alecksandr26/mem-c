@@ -81,6 +81,13 @@ int main(void)
 }
 ```
 
+### Compiling
+
+To compile your code, you must link the library using the `-lmem` flag:
+```c
+cc yourcode.c -lmem
+```
+
 ### Other Functions
 
 **mem-c** provides several other functions for memory management:
