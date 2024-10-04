@@ -120,7 +120,14 @@ int main(void)
 
 In debug mode (enabled when `NDEBUG` is not defined), **mem-c** offers additional features to monitor memory usage and detect issues:
 
-- `mem_dbg_fetch_mem_stats`: Retrieves statistics about memory usage and chunks.
+- `mem_dbg_fetch_mem_stats:` Retrieves statistics about memory usage and chunks. It also logs this information to the given file descriptor based on the specified verbosity level.
+  - Level 0 will not print anything.
+  - Level 1 will print only the main statistics.
+  - Level 2 will print all pages and their information.
+  - Level 3 will print each allocated chunk.
+
+  The verbosity is given as the second argument, and the third argument will be the file descriptor.
+
 - `mem_dbg_verify_ds_integrity`: Verifies the integrity of the heap data structure.
 - `mem_dbg_is_freeded`: Checks if a specific address has already been freed, useful for asserting addresses.
 
@@ -144,7 +151,7 @@ int main(void)
 
     // Several allocations here ...
 
-    // Fetch memory stats
+    // Fetch memory stats, the second argument refers to the verbosity 
     mem_dbg_fetch_mem_stats(&stats, 1, 1);
 
     // Verify data structures integrity
