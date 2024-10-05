@@ -1,7 +1,8 @@
 #ifndef MEM_H
 #define MEM_H
 
-/* TODO: Investigate how to get a better performance in mem_find_chks_page to avoid O(n * log n) */
+/* TODO: Implement a trie data structre for each page ptr
+   to get a better performance in mem_find_chks_page to avoid O(n * log n) and have O(1) */
 /* TODO: Make better cheksum to avoid possibly overwrittes from the user */
 /* TODO: Add more metadata to the chunk to combine better the chunks */
 /* TODO: Add an aligned alloc (Optional) */
