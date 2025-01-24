@@ -10,10 +10,13 @@
 #include "chk.h"
 #include "utils.h"
 
+
+// Allocating 32772 bytes about 32 kilo bytes
 Heap_T heap_pages = {
 	.size = 0
 };
 
+// Allocating 32772 bytes about 32 kilo bytes
 PagePtrsArray_T pageptrs = {
 	.size = 0
 };
@@ -28,6 +31,7 @@ static int compare_ptrs(const void *a, const void *b)
 	return (long) ptr_a - (long) ptr_b;
 }
 
+// TODO: Remove this part of code this makes O(N * log N)
 static void Page_sort_pageptrs(void)
 {
 	/* Run quick sort */
@@ -71,6 +75,8 @@ static void Page_rem_pageptrs(int i)
 	pageptrs.size--;
 }
 
+
+// Runtime O(Log N)
 int Page_find_chks_page(const uint8_t *chkptr)
 {
 	/* for (int i = 0; i < (int) heap_pages.size; i++) */
@@ -86,7 +92,7 @@ int Page_find_chks_page(const uint8_t *chkptr)
 	
 	if (pageptrs.size == 0)
 		return -1;
-
+	
 	while (left <= right) {
 		int mid = left + (right - left) / 2;
 		if (PAGEPTR_START_ADDR(pageptrs.buff[mid]) <= chkptr && chkptr < PAGEPTR_END_ADDR(pageptrs.buff[mid]))

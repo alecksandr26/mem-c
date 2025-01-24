@@ -23,8 +23,7 @@
 /* A more debuggable code */
 void foo(void *addr)
 {
-	assert(!mem_dbg_is_freeded(addr));
-	
+assert(!mem_dbg_is_freeded(addr));
 }
 
 void reset_the_allocator(void)

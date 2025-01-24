@@ -27,7 +27,7 @@ void *mem_alloc(unsigned long nbytes)
 	Chk_T chk = {
 		.size = nbytes
 	};
-	
+
 	if (heap_free_chunks.size > 0) {
 		Chk_T top = CHKPTR_FETCH_CHK_T(Heap_top(&heap_free_chunks));
 		int index_page = Page_find_chks_page(top.ptr);
@@ -52,7 +52,6 @@ void *mem_alloc(unsigned long nbytes)
 			assert(CHKPTR_CAPACITY(chk.ptr) == (uint32_t) chk.capacity);
 			assert(CHKPTR_CAPACITY(frag_chk.ptr) == (uint32_t) \
 			       frag_chk.capacity);
-
 			
 			Chk_put_checksum(&frag_chk);
 			Heap_push(&heap_free_chunks, frag_chk.ptr, &Chk_capacity_cmp);
@@ -69,9 +68,9 @@ void *mem_alloc(unsigned long nbytes)
 	Page_T page;
 	if (heap_pages.size > 0
 	    && PAGEPTR_CAPACITY(Heap_top(&heap_pages)) > nbytes) {
-		uint8_t *root_page_ptr = Heap_pop(&heap_pages, &Page_capacity_cmp);
-		Page_T root_page = PAGEPTR_FETCH_PAGE_T(root_page_ptr);
-		page = root_page;
+		uint8_t *top_page_ptr = Heap_pop(&heap_pages, &Page_capacity_cmp);
+		Page_T top_page = PAGEPTR_FETCH_PAGE_T(top_page_ptr);
+		page = top_page;
 	} else {
 		Page_alloc(&page, nbytes);
 	}

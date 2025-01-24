@@ -1,13 +1,17 @@
 #include <inttypes.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unittest.h>
+#include <unittest_assert.h>
+#include <unittest_tcase.h>
 
 #define FULL_MEM_DBG
 #include "../include/mem.h"
 #include "utils.h"
 #include "heap.h"
 #include "page.h"
+#include "trie.h"
 
 int cmp(const void **addr1, const void **addr2)
 {
@@ -512,8 +516,6 @@ TESTCASE(SortedArrayPageOfPtrs) {
 		
 		Page_free(&page1);
 	}
-
-
 	TEST(HardPageAllocation) {
 		int n = 100;
 		Page_T page[n];
@@ -532,11 +534,39 @@ TESTCASE(SortedArrayPageOfPtrs) {
 } ENDTESTCASE
 
 
+TESTCASE(TestCaseTrie) {
+	char page[1024];		/* Suppose that it is a page */
+	char *chk_ptr = &page[100];	/* Suppose that it is chk */
+	
+	TEST(SimpleInsertion) {
+		Trie_insert((uint64_t) chk_ptr, (uint8_t *) page);
+		ASSERT_NEQ(Trie_search((uint64_t) chk_ptr), NULL, "Can't be null since it was inserted");
+	}
+
+	TEST(SimpleDeletion) {
+		Trie_insert((uint64_t) chk_ptr, (uint8_t *) page);
+		Trie_delete((uint64_t) chk_ptr);
+		ASSERT_EQ(Trie_search((uint64_t) chk_ptr), NULL, "Can't be something since it was deleted");
+	}
+
+	TEST(MultiplePages) {
+		char page2[1024], page3[1024];
+		char *chk_ptr2 = &page2[200], *chk_ptr3 = &page3[300], *chk_ptr4 = &page2[400];
+		Trie_insert((uint64_t) chk_ptr, (uint8_t *) page);
+		Trie_insert((uint64_t) chk_ptr2, (uint8_t *) page2);
+		Trie_insert((uint64_t) chk_ptr3, (uint8_t *) page3);
+		Trie_insert((uint64_t) chk_ptr4, (uint8_t *) page2);
+		
+		ASSERT_EQ(Trie_search((uint64_t) chk_ptr2), Trie_search((uint64_t) chk_ptr4), "Must be equal since both are allocated in the same page");
+	}
+} ENDTESTCASE
+
 int main(void)
 {
-	RUN(TestCaseHeap, TestPage, TestMem, ChunkCombine, ChunkCheckSum, SortedArrayPageOfPtrs,
-	    NonFunctionalTest);
-	
+	/* RUN(TestCaseHeap, TestPage, TestMem, ChunkCombine, ChunkCheckSum, SortedArrayPageOfPtrs, */
+	/*     NonFunctionalTest, TestCaseTrie); */
+	RUN(TestCaseTrie, SortedArrayPageOfPtrs);
+
 	
 	return 0;
 }

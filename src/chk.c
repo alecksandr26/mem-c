@@ -14,6 +14,7 @@ int CHK_MIN_CHUNK_SIZE = 40;
 
 Except_T ExceptOverFreededChunks = INIT_EXCEPT_T("Over freeded chunks");
 
+// Allocating 32772 bytes about 32 kilo bytes
 Heap_T heap_free_chunks = {
 	.size = 0
 };

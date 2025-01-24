@@ -13,3 +13,4 @@ gmon.out
 pkg/*
 
 *.out
+data.txt
