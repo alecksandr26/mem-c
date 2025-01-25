@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <unistd.h>
 #include <inttypes.h>
 #include <string.h>
@@ -7,6 +8,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "trie.h"
 #include "utils.h"
 #include "heap.h"
 #include "page.h"
@@ -30,8 +32,7 @@ void *mem_alloc(unsigned long nbytes)
 
 	if (heap_free_chunks.size > 0) {
 		Chk_T top = CHKPTR_FETCH_CHK_T(Heap_top(&heap_free_chunks));
-		int index_page = Page_find_chks_page(top.ptr);
-		Chk_combine_with_freeded_neighbor(&top, PAGEPTR_AVAILABLE_ADDR(pageptrs.buff[index_page]));
+		Chk_combine_with_freeded_neighbor(&top, PAGEPTR_AVAILABLE_ADDR(Page_find_chks_page(top.raddr)));
 	}
 	
 	if (heap_free_chunks.size > 0
@@ -57,6 +58,8 @@ void *mem_alloc(unsigned long nbytes)
 			Heap_push(&heap_free_chunks, frag_chk.ptr, &Chk_capacity_cmp);
 			
 			Chk_rem_checksum(&chk);
+			/* Since it is a new chunk we need to map it */
+			Trie_map((uint64_t) chk.raddr, Trie_find((uint64_t) frag_chk.raddr));
 			return (void *) chk.raddr;
 		}
 
@@ -83,7 +86,7 @@ void *mem_alloc(unsigned long nbytes)
 	assert(chk.raddr < page.end);
 	assert(chk.raddr < page.available);
 	assert(heap_pages.size > 0);
-			
+
 	return (void *) chk.raddr;
 }
 
@@ -93,11 +96,11 @@ void mem_free(void *addr)
 	uint8_t *chkptr = (uint8_t *) addr - sizeof(uint64_t);
 	Chk_T chk = CHKPTR_FETCH_CHK_T(chkptr);
 
-	int page_index = Page_find_chks_page(chkptr);
-	if (page_index == -1)
+	uint8_t *pageptr = Page_find_chks_page(addr);
+	if (pageptr == NULL)
 		RAISE(ExceptInvalidAddr, "Can't free an invalid addr");
 
-	Page_T page = PAGEPTR_FETCH_PAGE_T(pageptrs.buff[page_index]);
+	Page_T page = PAGEPTR_FETCH_PAGE_T(pageptr);
 	if (chk.capacity == 0 || chk.size >= page.size)
 		RAISE(ExceptCorruptedAddr, "The reserved addr has an invalid capacity");
 
@@ -105,7 +108,7 @@ void mem_free(void *addr)
 	    || Chk_verify_checksum(&chk) == 1)
 		RAISE(ExceptInvalidAddr, "Address already freed");
 
-	page_index = Heap_find(&heap_pages, page.ptr,&Page_capacity_cmp);
+	uint32_t page_index = Heap_find(&heap_pages, page.ptr,&Page_capacity_cmp);
 	Heap_rem(&heap_pages, page_index, &Page_capacity_cmp);
 	Page_chk_free(&page, &chk);
 
@@ -123,16 +126,15 @@ void *mem_ralloc(void *addr, unsigned long nbytes)
 		RAISE(ExceptInvalidNBytes, "Can't alloc zero bytes (nbytes = 0)");
 	
 	uint8_t *chkptr = (uint8_t *) addr - sizeof(uint64_t);
-	Chk_T chk = CHKPTR_FETCH_CHK_T(chkptr);
-
-	int page_index = Page_find_chks_page(chkptr);
-	if (page_index == -1)
+	uint8_t *pageptr = Page_find_chks_page(addr);
+	if (pageptr == NULL)
 		RAISE(ExceptInvalidAddr, "Can't free an invalid addr");
+	Chk_T chk = CHKPTR_FETCH_CHK_T(chkptr);
 	
-	uint32_t n = MIN(nbytes, (uint64_t) chk.capacity);
 	void *new_addr = mem_alloc(nbytes);
 
 	/* TODO: Implement a vectorized memcpy */
+	uint32_t n = MIN(nbytes, (uint64_t) chk.capacity);
 	memcpy(new_addr, addr, n);
 
 	mem_free(addr);
@@ -147,7 +149,7 @@ void *mem_calloc(unsigned long obj_size, unsigned long nobjs)
 
 	void *ptr = mem_alloc(obj_size * nobjs);
 
-	/* Set the meomry chunk in zeros */
+	/* TODO: Implement a vectorized set to zero */
 	memset(ptr, 0, obj_size * nobjs);
 	
 	return ptr;

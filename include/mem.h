@@ -43,7 +43,7 @@ typedef struct {
 extern Except_T ExceptCorruptedHeapDS;
 extern int mem_dbg_is_freeded(const void *addr);
 extern void mem_dbg_fetch_mem_stats(MemStats_T *stats, int verbose, int log_fd);
-extern void mem_dbg_verify_ds_integrity(void);
+extern void mem_dbg_verify_integrity(void);
 #endif
 
 

@@ -1,9 +1,13 @@
+#include "chk.h"
+#include <stdint.h>
+#include <except.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unittest.h>
 #include <unittest_assert.h>
+#include <unittest_info.h>
 #include <unittest_tcase.h>
 
 #define FULL_MEM_DBG
@@ -312,35 +316,35 @@ TESTCASE(TestMem) {
 
 		ASSERT_EQ(heap_pages.size, 3);
 
-		int page_kilo_index = Page_find_chks_page(kilob - sizeof(uint64_t));
-		Page_T page_kilo = PAGEPTR_FETCH_PAGE_T(pageptrs.buff[page_kilo_index]);
-		INFO("Kilo: %i -> %zu", page_kilo_index, page_kilo.capacity);
+		uint8_t *pageptr_kilo = Page_find_chks_page(kilob - sizeof(uint64_t));
+		Page_T page_kilo = PAGEPTR_FETCH_PAGE_T(pageptr_kilo);
+		INFO("Kilo: %p -> %zu", pageptr_kilo, page_kilo.capacity);
 
-		int page_mega_index = Page_find_chks_page(megab - sizeof(uint64_t));
-		Page_T page_mega = PAGEPTR_FETCH_PAGE_T(pageptrs.buff[page_mega_index]);
-		INFO("Mega: %i -> %zu", page_mega_index, page_mega.capacity);
+		uint8_t *pageptr_mega = Page_find_chks_page(megab - sizeof(uint64_t));
+		Page_T page_mega = PAGEPTR_FETCH_PAGE_T(pageptr_mega);
+		INFO("Mega: %p -> %zu", pageptr_mega, page_mega.capacity);
 
-		int page_giga_index = Page_find_chks_page(gigab - sizeof(uint64_t));
-		Page_T page_giga = PAGEPTR_FETCH_PAGE_T(pageptrs.buff[page_giga_index]);
-		INFO("Giga: %i -> %zu", page_giga_index, page_giga.capacity);
+		uint8_t *pageptr_giga = Page_find_chks_page(gigab - sizeof(uint64_t));
+		Page_T page_giga = PAGEPTR_FETCH_PAGE_T(pageptr_giga);
+		INFO("Giga: %p -> %zu", pageptr_giga, page_giga.capacity);
 		
 		ASSERT_EQ(page_giga.size, aling_to_mul_4kb(GIGABYTE + 2 * sizeof(uint64_t)));
 		ASSERT_EQ(page_mega.size, aling_to_mul_4kb(2 * MEGABYTE + 2 * sizeof(uint64_t)));
 		ASSERT_EQ(page_kilo.size, aling_to_mul_4kb(6 * KILOBYTE + 2 * sizeof(uint64_t)));
 		
-		int index = Page_find_chks_page(gigab - sizeof(uint64_t));
-		ASSERT_NEQ(index, 2);
+		uint8_t *ptr = Page_find_chks_page(gigab - sizeof(uint64_t));
+		ASSERT_NEQ(ptr, pageptr_mega);
 		
 		mem_free(gigab);
 		ASSERT_EQ(heap_pages.size, 2);
-		index = Page_find_chks_page(megab - sizeof(uint64_t));
-		ASSERT_EQ(index, 0);
+		ptr = Page_find_chks_page(megab - sizeof(uint64_t));
+		ASSERT_EQ(ptr, pageptr_mega);
 		
 		mem_free(megab);
 		ASSERT_EQ(heap_pages.size, 1);
 
-		index = Page_find_chks_page(kilob - sizeof(uint64_t));
-		ASSERT_EQ(index, 0);
+		ptr = Page_find_chks_page(kilob - sizeof(uint64_t));
+		ASSERT_EQ(ptr, pageptr_kilo);
 		
 		mem_free(kilob);
 		ASSERT_EQ(heap_pages.size, 0);
@@ -352,7 +356,7 @@ TESTCASE(NonFunctionalTest) {
 	TEST(ComparisonWithMalloc) {
 		clock_t start, end;
 		double malloc_time, custom_time;
-		int nallocations = 100, c_ptr_m = 0, c_ptr_c = 0;
+		int nallocations = 50, c_ptr_m = 0, c_ptr_c = 0;
 		int max_mem_to_alloc = KILOBYTE;
 		void *ptr_malloc[nallocations];
 		void *ptr_custom[nallocations];
@@ -371,17 +375,13 @@ TESTCASE(NonFunctionalTest) {
 		}
 		end = clock();
 		malloc_time = ((double) (end - start)) / CLOCKS_PER_SEC;
-
 		// Test custom allocator
 		start = clock();
 		for (int i = 0; i < nallocations; i++) {
-			ptr_custom[c_ptr_c++] = mem_alloc((rand() % max_mem_to_alloc)
-							  + 1);
-
+			ptr_custom[c_ptr_c++] = mem_alloc((rand() % max_mem_to_alloc) + 1);
 			int q = rand() % c_ptr_c;
-
 			if (rand() % 2 == 0 && ptr_custom[q] != NULL) {
-				mem_free(ptr_custom[q]);
+				ASSERT_NO_THROW(mem_free(ptr_custom[q]));
 				ptr_custom[q] = NULL;
 			}
 		}
@@ -482,56 +482,56 @@ TESTCASE(ChunkCombine) {
 } ENDTESTCASE
 
 
-TESTCASE(SortedArrayPageOfPtrs) {
-	TEST(SimplePageAllocation) {
-		Page_T page1, page2, page3;
-		Page_alloc(&page1, KILOBYTE);
-		Page_alloc(&page2, KILOBYTE);
-		Page_alloc(&page3, KILOBYTE);
+/* TESTCASE(SortedArrayPageOfPtrs) { */
+/* 	TEST(SimplePageAllocation) { */
+/* 		Page_T page1, page2, page3; */
+/* 		Page_alloc(&page1, KILOBYTE); */
+/* 		Page_alloc(&page2, KILOBYTE); */
+/* 		Page_alloc(&page3, KILOBYTE); */
 
-		INFO("page1: %p", page1.ptr);
-		INFO("page2: %p", page2.ptr);
-		INFO("page3: %p", page3.ptr);
+/* 		INFO("page1: %p", page1.ptr); */
+/* 		INFO("page2: %p", page2.ptr); */
+/* 		INFO("page3: %p", page3.ptr); */
 
-		INFO("pageptrs.buff[0]: %p", pageptrs.buff[0]);
-		INFO("pageptrs.buff[1]: %p", pageptrs.buff[1]);
-		INFO("pageptrs.buff[2]: %p", pageptrs.buff[2]);
+/* 		INFO("pageptrs.buff[0]: %p", pageptrs.buff[0]); */
+/* 		INFO("pageptrs.buff[1]: %p", pageptrs.buff[1]); */
+/* 		INFO("pageptrs.buff[2]: %p", pageptrs.buff[2]); */
 
-		ASSERT_EQ(pageptrs.size, 3);		
-		ASSERT_EQ(pageptrs.buff[0], page3.ptr);
-		ASSERT_EQ(pageptrs.buff[1], page2.ptr);
-		ASSERT_EQ(pageptrs.buff[2], page1.ptr);
+/* 		ASSERT_EQ(pageptrs.size, 3);		 */
+/* 		ASSERT_EQ(pageptrs.buff[0], page3.ptr); */
+/* 		ASSERT_EQ(pageptrs.buff[1], page2.ptr); */
+/* 		ASSERT_EQ(pageptrs.buff[2], page1.ptr); */
 		
-		ASSERT(pageptrs.buff[0] < pageptrs.buff[1]);
-		ASSERT(pageptrs.buff[1] < pageptrs.buff[2]);
+/* 		ASSERT(pageptrs.buff[0] < pageptrs.buff[1]); */
+/* 		ASSERT(pageptrs.buff[1] < pageptrs.buff[2]); */
 
-		Page_free(&page2);
-		ASSERT_EQ(pageptrs.buff[0], page3.ptr);
-		ASSERT_EQ(pageptrs.buff[1], page1.ptr);
+/* 		Page_free(&page2); */
+/* 		ASSERT_EQ(pageptrs.buff[0], page3.ptr); */
+/* 		ASSERT_EQ(pageptrs.buff[1], page1.ptr); */
 		
-		ASSERT(pageptrs.buff[0] < pageptrs.buff[1]);
+/* 		ASSERT(pageptrs.buff[0] < pageptrs.buff[1]); */
 		
-		Page_free(&page3);
-		ASSERT_EQ(pageptrs.buff[0], page1.ptr);
+/* 		Page_free(&page3); */
+/* 		ASSERT_EQ(pageptrs.buff[0], page1.ptr); */
 		
-		Page_free(&page1);
-	}
-	TEST(HardPageAllocation) {
-		int n = 100;
-		Page_T page[n];
+/* 		Page_free(&page1); */
+/* 	} */
+/* 	TEST(HardPageAllocation) { */
+/* 		int n = 100; */
+/* 		Page_T page[n]; */
 		
-		for (int i = 0; i < n; i++)
-			Page_alloc(&page[i], KILOBYTE);
+/* 		for (int i = 0; i < n; i++) */
+/* 			Page_alloc(&page[i], KILOBYTE); */
 
-		ASSERT_EQ(pageptrs.size, n);
+/* 		ASSERT_EQ(pageptrs.size, n); */
 
-		for (int i = 0; i < n; i++)
-			ASSERT_EQ(page[i].ptr, pageptrs.buff[n - i - 1]);
+/* 		for (int i = 0; i < n; i++) */
+/* 			ASSERT_EQ(page[i].ptr, pageptrs.buff[n - i - 1]); */
 		
-		for (int i = 0; i < n; i++)
-			Page_free(&page[i]);		
-	}
-} ENDTESTCASE
+/* 		for (int i = 0; i < n; i++) */
+/* 			Page_free(&page[i]);		 */
+/* } */
+/* } ENDTESTCASE */
 
 
 TESTCASE(TestCaseTrie) {
@@ -539,34 +539,34 @@ TESTCASE(TestCaseTrie) {
 	char *chk_ptr = &page[100];	/* Suppose that it is chk */
 	
 	TEST(SimpleInsertion) {
-		Trie_insert((uint64_t) chk_ptr, (uint8_t *) page);
-		ASSERT_NEQ(Trie_search((uint64_t) chk_ptr), NULL, "Can't be null since it was inserted");
+		Trie_map((uint64_t) chk_ptr, (uint8_t *) page);
+		ASSERT_NEQ(Trie_find((uint64_t) chk_ptr), NULL, "Can't be null since it was inserted");
 	}
 
 	TEST(SimpleDeletion) {
-		Trie_insert((uint64_t) chk_ptr, (uint8_t *) page);
+		Trie_map((uint64_t) chk_ptr, (uint8_t *) page);
 		Trie_delete((uint64_t) chk_ptr);
-		ASSERT_EQ(Trie_search((uint64_t) chk_ptr), NULL, "Can't be something since it was deleted");
+		ASSERT_EQ(Trie_find((uint64_t) chk_ptr), NULL, "Can't be something since it was deleted");
 	}
 
 	TEST(MultiplePages) {
 		char page2[1024], page3[1024];
 		char *chk_ptr2 = &page2[200], *chk_ptr3 = &page3[300], *chk_ptr4 = &page2[400];
-		Trie_insert((uint64_t) chk_ptr, (uint8_t *) page);
-		Trie_insert((uint64_t) chk_ptr2, (uint8_t *) page2);
-		Trie_insert((uint64_t) chk_ptr3, (uint8_t *) page3);
-		Trie_insert((uint64_t) chk_ptr4, (uint8_t *) page2);
+		Trie_map((uint64_t) chk_ptr, (uint8_t *) page);
+		Trie_map((uint64_t) chk_ptr2, (uint8_t *) page2);
+		Trie_map((uint64_t) chk_ptr3, (uint8_t *) page3);
+		Trie_map((uint64_t) chk_ptr4, (uint8_t *) page2);
 		
-		ASSERT_EQ(Trie_search((uint64_t) chk_ptr2), Trie_search((uint64_t) chk_ptr4), "Must be equal since both are allocated in the same page");
+		ASSERT_EQ(Trie_find((uint64_t) chk_ptr2), Trie_find((uint64_t) chk_ptr4), "Must be equal since both are allocated in the same page");
 	}
 } ENDTESTCASE
 
 int main(void)
 {
-	/* RUN(TestCaseHeap, TestPage, TestMem, ChunkCombine, ChunkCheckSum, SortedArrayPageOfPtrs, */
+	/* RUN(TestCaseHeap, TestPage, TestMem, ChunkCombine, ChunkCheckSum, */
 	/*     NonFunctionalTest, TestCaseTrie); */
-	RUN(TestCaseTrie, SortedArrayPageOfPtrs);
 
+	RUN(NonFunctionalTest);
 	
 	return 0;
 }

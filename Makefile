@@ -33,7 +33,7 @@ run: $(MAIN)
 	./$< > data.txt
 res:
 	@echo "Printing the already calculated results"
-	python $(SRC_DIR)/script.py
+	python3 $(SRC_DIR)/script.py
 
 $(MAIN): main.c $(LIBS) | $(BUILD_DIR)
 	$(C) $(C_GP_FLAGS) $(C_FLAGS) $^ -o $@ $(C_LIBS_FLAGS)
@@ -46,7 +46,7 @@ profile: $(MAIN) | run
 	rm gmon.out
 
 $(TEST_DIR)/%.out: $(SRC_DIR)/%.c  $(LIBS) | $(TEST_DIR)
-	$(C) $(C_FLAGS) $^ -o $@ $(C_LIBS_FLAGS) -lunittest
+	$(C) $(C_FLAGS) $< -L./$(LIB_DIR) -lmem -Wl,-rpath,./build/lib -o $@ -lunittest
 
 $(TEST_DIR): $(BUILD_DIR)
 	mkdir -p $@

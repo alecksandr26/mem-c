@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <sys/mman.h>
 #include <except.h>
 #include <except/assert.h>
@@ -8,6 +9,7 @@
 #include "page.h"
 #include "heap.h"
 #include "chk.h"
+#include "trie.h"
 #include "utils.h"
 
 
@@ -17,93 +19,95 @@ Heap_T heap_pages = {
 };
 
 // Allocating 32772 bytes about 32 kilo bytes
-PagePtrsArray_T pageptrs = {
-	.size = 0
-};
+/* PagePtrsArray_T pageptrs = { */
+/* 	.size = 0 */
+/* }; */
 
 Except_T ExceptFatalPageError = INIT_EXCEPT_T("Fatal error in page manipulation");
 
-static int compare_ptrs(const void *a, const void *b)
-{
-	const uint8_t *ptr_a = *(const uint8_t **) a;
-	const uint8_t *ptr_b = *(const uint8_t **) b;
+/* static int compare_ptrs(const void *a, const void *b) */
+/* { */
+/* 	const uint8_t *ptr_a = *(const uint8_t **) a; */
+/* 	const uint8_t *ptr_b = *(const uint8_t **) b; */
 
-	return (long) ptr_a - (long) ptr_b;
-}
+/* 	return (long) ptr_a - (long) ptr_b; */
+/* } */
 
 // TODO: Remove this part of code this makes O(N * log N)
-static void Page_sort_pageptrs(void)
+/* static void Page_sort_pageptrs(void) */
+/* { */
+/* 	qsort(pageptrs.buff, pageptrs.size, sizeof(uint8_t *), compare_ptrs); */
+/* } */
+
+/* static void Page_ins_pageptrs(const uint8_t *pageptr) */
+/* { */
+/* 	assert(pageptr != NULL); */
+/* 	pageptrs.buff[pageptrs.size++] = (uint8_t *) pageptr; */
+/* } */
+
+/* static int Page_find_pageptrs(const uint8_t *pageptr) */
+/* { */
+/* 	assert(pageptr != NULL); */
+/* 	int left = 0; */
+/* 	int right = (int) pageptrs.size - 1; */
+
+/* 	if (pageptrs.size == 0) */
+/* 		return -1; */
+
+/* 	while (left <= right) { */
+/* 		int mid = left + (right - left) / 2; */
+/* 		if (pageptrs.buff[mid] == pageptr) */
+/* 			return mid; */
+/* 		else if (pageptrs.buff[mid] > pageptr) */
+/* 			right = mid - 1; */
+/* 		else */
+/* 			left = mid + 1; */
+/* 	} */
+
+/* 	return -1;	 */
+/* } */
+
+
+/* static void Page_rem_pageptrs(int i) */
+/* { */
+/* 	assert(i >= 0); */
+/* 	if (pageptrs.size > 0) */
+/* 		pageptrs.buff[i] = pageptrs.buff[pageptrs.size - 1]; */
+/* 	pageptrs.size--; */
+/* } */
+
+
+uint8_t *Page_find_chks_page(const uint8_t *chkptr)
 {
-	/* Run quick sort */
-	qsort(pageptrs.buff, pageptrs.size, sizeof(uint8_t *), compare_ptrs);
-}
-
-static void Page_ins_pageptrs(const uint8_t *pageptr)
-{
-	assert(pageptr != NULL);
-	pageptrs.buff[pageptrs.size++] = (uint8_t *) pageptr;
-}
-
-static int Page_find_pageptrs(const uint8_t *pageptr)
-{
-	assert(pageptr != NULL);
-	int left = 0;
-	int right = (int) pageptrs.size - 1;
-
-	if (pageptrs.size == 0)
-		return -1;
-
-	while (left <= right) {
-		int mid = left + (right - left) / 2;
-		if (pageptrs.buff[mid] == pageptr)
-			return mid;
-		else if (pageptrs.buff[mid] > pageptr)
-			right = mid - 1;
-		else
-			left = mid + 1;
-	}
-
-	return -1;	
-}
-
-
-static void Page_rem_pageptrs(int i)
-{
-	assert(i >= 0);
-	if (pageptrs.size > 0)
-		pageptrs.buff[i] = pageptrs.buff[pageptrs.size - 1];
-	pageptrs.size--;
-}
-
-
-// Runtime O(Log N)
-int Page_find_chks_page(const uint8_t *chkptr)
-{
+	assert(chkptr != NULL);
+	
+	// Runtime O(N)
 	/* for (int i = 0; i < (int) heap_pages.size; i++) */
 	/* 	if (PAGEPTR_START_ADDR(heap_pages.buff[i]) < chkptr */
 	/* 	    && chkptr < PAGEPTR_END_ADDR(heap_pages.buff[i])) */
 	/* 		return i; */
 	/* return -1; */
 	
-	assert(chkptr != NULL);
+	// Runtime O(Log N)
 
-	int left = 0;
-	int right = (int) pageptrs.size - 1;
+	/* int left = 0; */
+	/* int right = (int) pageptrs.size - 1; */
 	
-	if (pageptrs.size == 0)
-		return -1;
+	/* if (pageptrs.size == 0) */
+	/* 	return -1; */
 	
-	while (left <= right) {
-		int mid = left + (right - left) / 2;
-		if (PAGEPTR_START_ADDR(pageptrs.buff[mid]) <= chkptr && chkptr < PAGEPTR_END_ADDR(pageptrs.buff[mid]))
-			return mid;
-		else if (PAGEPTR_START_ADDR(pageptrs.buff[mid]) > chkptr)
-			right = mid - 1;
-		else
-			left = mid + 1;
-	}
+	/* while (left <= right) { */
+	/* 	int mid = left + (right - left) / 2; */
+	/* 	if (PAGEPTR_START_ADDR(pageptrs.buff[mid]) <= chkptr && chkptr < PAGEPTR_END_ADDR(pageptrs.buff[mid])) */
+	/* 		return mid; */
+	/* 	else if (PAGEPTR_START_ADDR(pageptrs.buff[mid]) > chkptr) */
+	/* 		right = mid - 1; */
+	/* 	else */
+	/* 		left = mid + 1; */
+	/* } */
 
-	return -1;
+	// Runtime O(1)
+	return Trie_find((uint64_t) chkptr);
 }
 
 int Page_capacity_cmp(const void **addr1, const void **addr2)
@@ -136,16 +140,17 @@ void Page_alloc(Page_T *page, uint64_t nbytes)
 	
 	Page_T p = PAGEPTR_FETCH_PAGE_T(pageptr);
 	*page = p;
+
+	/* O(N * log(N)) */
+	/* Page_ins_pageptrs(pageptr); */
+	/* Page_sort_pageptrs(); */
 	
-	Page_ins_pageptrs(pageptr);
-	Page_sort_pageptrs();
-	
-	assert(PAGEPTR_AVAILABLE_ADDR(pageptr) == p.available);
-	assert(p.capacity >= (int64_t) (nbytes - 2 * sizeof(uint64_t)));
-	assert(p.size >= (int64_t) nbytes);
-	assert(p.available == pageptr + 2 * sizeof(uint64_t));
-	assert(p.end == pageptr + nbytes);
-	assert(p.ptr == pageptr);
+	/* assert(PAGEPTR_AVAILABLE_ADDR(pageptr) == p.available); */
+	/* assert(p.capacity >= (int64_t) (nbytes - 2 * sizeof(uint64_t))); */
+	/* assert(p.size >= (int64_t) nbytes); */
+	/* assert(p.available == pageptr + 2 * sizeof(uint64_t)); */
+	/* assert(p.end == pageptr + nbytes); */
+	/* assert(p.ptr == pageptr); */
 }
 
 void Page_chk_alloc(Page_T *page, Chk_T *chk)
@@ -159,12 +164,15 @@ void Page_chk_alloc(Page_T *page, Chk_T *chk)
 	assert(chk->size % 8 == 0, "Must be multiple of 8");
 	assert(chk->size >= CHK_MIN_CHUNK_SIZE, "Must be gretaer or equal to the min Chunk size");
 	
-
+	// Alloc the chunk into the map
 	chk->ptr = page->available;
 	chk->end = chk->ptr + chk->size;
 	chk->raddr = page->available + sizeof(uint64_t);
 	chk->capacity = chk->size - sizeof(uint64_t);
 	*((uint64_t *) chk->ptr) = chk->capacity;
+
+	// Map the actual chunk ptr to its page
+	Trie_map((uint64_t) chk->raddr, page->ptr);
 
 #ifndef NDEBUG
 	/* Just to verify that everything works */
@@ -202,7 +210,9 @@ void Page_chk_free(Page_T *page, Chk_T *chk)
 		page->capacity += chk->size;
 		*((uint64_t *) (PAGEPTR_START_ADDR(page->ptr))) = (uint64_t) page->available;
 		assert(PAGEPTR_AVAILABLE_ADDR(page->ptr) == page->available);
-		return; 
+		// Unmap the chunk to the page
+		Trie_delete((uint64_t) chk->raddr);
+		return;
 	}
 	
 	if (heap_free_chunks.size == HEAP_CAPACITY)
@@ -219,10 +229,11 @@ void Page_free(Page_T *page)
 
 	if (munmap(page->ptr, page->size) == -1)
 		RAISE(ExceptFatalPageError, "munmap: %s", strerror(errno));
-	
-	int index = Page_find_pageptrs(page->ptr);
-	Page_rem_pageptrs(index);
-	Page_sort_pageptrs();
+
+	/* O(N * log N) */
+	/* int index = Page_find_pageptrs(page->ptr); */
+	/* Page_rem_pageptrs(index); */
+	/* Page_sort_pageptrs(); */
 	
 	bzero(page, sizeof(*page));
 }

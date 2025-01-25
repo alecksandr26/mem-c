@@ -2,6 +2,7 @@
 #define PAGE_H
 
 #include <inttypes.h>
+#include <stdint.h>
 #include "heap.h"
 #include "chk.h"
 
@@ -36,7 +37,7 @@ extern void Page_alloc(Page_T *page, uint64_t nbytes);
 extern void Page_chk_alloc(Page_T *page, Chk_T *chk);
 extern void Page_chk_free(Page_T *page, Chk_T *chk);
 extern void Page_free(Page_T *page);
-extern int Page_find_chks_page(const uint8_t *chkptr);
+extern uint8_t *Page_find_chks_page(const uint8_t *chkptr);
 
 
 #endif

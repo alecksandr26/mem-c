@@ -4,12 +4,44 @@
 
 // Alloc the trie, and initialized its first root node
 // Allocating 4210688 about 4 mega bytes, but offers about 1 million of addresses
+// 32 * 4210688 = 129 mega bytes
+// NOTE: Change this logic to avoid wasting those page ptr bytes
 static TrieNode trie[TRIE_CAPACITY] = {
 	{
-		.children = {-1},
+		.children = {-1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1,
+			     -1, -1, -1, -1, -1, -1, -1, -1},
 		.page = NULL,
-	},
-	0};
+	}};
 
 static uint32_t trie_size = 1;
 
@@ -24,7 +56,7 @@ static int32_t new_trie_node(void)
 }
 
 // All this functions run about O(1)
-void Trie_insert(uint64_t chkptr, uint8_t *page)
+void Trie_map(uint64_t chkptr, uint8_t *page)
 {
 	assert(chkptr != 0);
 	assert(page != NULL);
@@ -45,7 +77,7 @@ void Trie_insert(uint64_t chkptr, uint8_t *page)
 
 
 // Trie_search: Returns null in case of not been allocated
-uint8_t *Trie_search(uint64_t chkptr)
+uint8_t *Trie_find(uint64_t chkptr)
 {
 	assert(chkptr != 0);
 
@@ -62,6 +94,9 @@ uint8_t *Trie_search(uint64_t chkptr)
 	return curr->page;
 }
 
+// TODO: Investigate how to reuse the space from the uneeded paths
+// Is possible just allocated each node into array of 8 trie nodedes,
+// And then delete the trie nodes that contains just one children
 void Trie_delete(uint64_t chkptr)
 {
 	assert(chkptr != 0);
