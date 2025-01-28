@@ -4,9 +4,9 @@
 // TODO: Map ptr 64 bit -> 64 bit pointer
 #include <stdint.h>
 
-#define TRIE_CAPACITY (4 * 1024) * 32
+/* #define TRIE_CAPACITY (4 * 1024) * 32 */
+#define TRIE_CAPACITY (4 * 1024) * 16
 #define TRIE_CHILDREN_CAPACITY 256
-
 
 typedef struct {
 	int32_t children[TRIE_CHILDREN_CAPACITY];

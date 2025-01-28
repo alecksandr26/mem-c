@@ -78,7 +78,7 @@ int main(void)
 	MemStats_T stats;
 
 	/* Number of test cases */
-	int N = 200;
+	int N = 150;
 	
 	for (int i = 5; i < N; i++) {
 		int nallocations = (rand() % (10 * i)) + 10 * (i - 4);

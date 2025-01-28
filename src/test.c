@@ -16,6 +16,7 @@
 #include "heap.h"
 #include "page.h"
 #include "trie.h"
+#include "stack.h"
 
 int cmp(const void **addr1, const void **addr2)
 {
@@ -316,15 +317,15 @@ TESTCASE(TestMem) {
 
 		ASSERT_EQ(heap_pages.size, 3);
 
-		uint8_t *pageptr_kilo = Page_find_chks_page(kilob - sizeof(uint64_t));
+		uint8_t *pageptr_kilo = Page_find_chks_page(kilob);
 		Page_T page_kilo = PAGEPTR_FETCH_PAGE_T(pageptr_kilo);
 		INFO("Kilo: %p -> %zu", pageptr_kilo, page_kilo.capacity);
 
-		uint8_t *pageptr_mega = Page_find_chks_page(megab - sizeof(uint64_t));
+		uint8_t *pageptr_mega = Page_find_chks_page(megab);
 		Page_T page_mega = PAGEPTR_FETCH_PAGE_T(pageptr_mega);
 		INFO("Mega: %p -> %zu", pageptr_mega, page_mega.capacity);
 
-		uint8_t *pageptr_giga = Page_find_chks_page(gigab - sizeof(uint64_t));
+		uint8_t *pageptr_giga = Page_find_chks_page(gigab);
 		Page_T page_giga = PAGEPTR_FETCH_PAGE_T(pageptr_giga);
 		INFO("Giga: %p -> %zu", pageptr_giga, page_giga.capacity);
 		
@@ -332,18 +333,18 @@ TESTCASE(TestMem) {
 		ASSERT_EQ(page_mega.size, aling_to_mul_4kb(2 * MEGABYTE + 2 * sizeof(uint64_t)));
 		ASSERT_EQ(page_kilo.size, aling_to_mul_4kb(6 * KILOBYTE + 2 * sizeof(uint64_t)));
 		
-		uint8_t *ptr = Page_find_chks_page(gigab - sizeof(uint64_t));
+		uint8_t *ptr = Page_find_chks_page(gigab);
 		ASSERT_NEQ(ptr, pageptr_mega);
 		
 		mem_free(gigab);
 		ASSERT_EQ(heap_pages.size, 2);
-		ptr = Page_find_chks_page(megab - sizeof(uint64_t));
+		ptr = Page_find_chks_page(megab);
 		ASSERT_EQ(ptr, pageptr_mega);
 		
 		mem_free(megab);
 		ASSERT_EQ(heap_pages.size, 1);
 
-		ptr = Page_find_chks_page(kilob - sizeof(uint64_t));
+		ptr = Page_find_chks_page(kilob);
 		ASSERT_EQ(ptr, pageptr_kilo);
 		
 		mem_free(kilob);
@@ -559,6 +560,13 @@ TESTCASE(TestCaseTrie) {
 		
 		ASSERT_EQ(Trie_find((uint64_t) chk_ptr2), Trie_find((uint64_t) chk_ptr4), "Must be equal since both are allocated in the same page");
 	}
+
+	TEST(ReuseOfMem) {
+		Trie_map((uint64_t) chk_ptr, (uint8_t *) page);
+		ASSERT_EQ(Stack_size(), 0, "Must be equal to zero");
+		Trie_delete((uint64_t) chk_ptr);
+		ASSERT_GE(Stack_size(), 8, "Must be equal to 8 nodes");
+	}
 } ENDTESTCASE
 
 int main(void)
@@ -566,7 +574,8 @@ int main(void)
 	/* RUN(TestCaseHeap, TestPage, TestMem, ChunkCombine, ChunkCheckSum, */
 	/*     NonFunctionalTest, TestCaseTrie); */
 
-	RUN(NonFunctionalTest);
+	RUN(TestMem, TestCaseTrie, TestCaseHeap, TestPage,
+	    ChunkCombine, ChunkCheckSum, NonFunctionalTest);
 	
 	return 0;
 }
