@@ -122,10 +122,17 @@ void mem_dbg_fetch_mem_stats(MemStats_T *stats, int verbose, int log_fd)
 	stats->avgpagesize = 0.0;
 	stats->avgpagecp = 0.0;
 
-	stats->totalmem = 0;
+	/* Add here the also the static memory from the structures */
+	
+	/* 32772 bytes are from heap_pages,
+	   another 32772 bytes are from heap_free_chunks,
+	   67633152 bytes are from the trie structure, and finally
+	   16392 bytes are from the stack structure
+	*/
+	stats->totalmem = 2 * 32772 + 67633152 + 16392;
 	stats->usedmem = 0;
 	stats->usedmem_byu = 0;
-	stats->nonusedmem = 0;
+	stats->nonusedmem = stats->totalmem;
 	stats->nonusedmem_byu = 0;
 
 	stats->minpagenchks = INT32_MAX;
@@ -269,9 +276,7 @@ void mem_dgb_verify_trie_integrity_and_chk_integrity(void)
 
 void mem_dbg_verify_integrity(void)
 {
-	/* Verifies the integrity of the used dataestrcutres to catch something weird happend
-	 */
-	
+	/* Verifies the integrity of the used dataestrcutres to catch something weird happend */
 	int damage;
 
 	damage = Heap_verify_integrity(&heap_pages, &Page_capacity_cmp);

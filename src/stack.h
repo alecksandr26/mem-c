@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "trie.h"
+#include "heap.h"
 
-#define STACK_CAPACITY TRIE_CAPACITY
+#define STACK_CAPACITY HEAP_CAPACITY
 
 typedef struct {
 	uint32_t buff[STACK_CAPACITY];

@@ -13,69 +13,12 @@
 #include "utils.h"
 
 
-// Allocating 32772 bytes about 32 kilo bytes
+// Allocating 32772 bytes about 32~33 kilo bytes
 Heap_T heap_pages = {
 	.size = 0
 };
 
-// Allocating 32772 bytes about 32 kilo bytes
-/* PagePtrsArray_T pageptrs = { */
-/* 	.size = 0 */
-/* }; */
-
 Except_T ExceptFatalPageError = INIT_EXCEPT_T("Fatal error in page manipulation");
-
-/* static int compare_ptrs(const void *a, const void *b) */
-/* { */
-/* 	const uint8_t *ptr_a = *(const uint8_t **) a; */
-/* 	const uint8_t *ptr_b = *(const uint8_t **) b; */
-
-/* 	return (long) ptr_a - (long) ptr_b; */
-/* } */
-
-
-/* static void Page_sort_pageptrs(void) */
-/* { */
-/* 	qsort(pageptrs.buff, pageptrs.size, sizeof(uint8_t *), compare_ptrs); */
-/* } */
-
-/* static void Page_ins_pageptrs(const uint8_t *pageptr) */
-/* { */
-/* 	assert(pageptr != NULL); */
-/* 	pageptrs.buff[pageptrs.size++] = (uint8_t *) pageptr; */
-/* } */
-
-/* static int Page_find_pageptrs(const uint8_t *pageptr) */
-/* { */
-/* 	assert(pageptr != NULL); */
-/* 	int left = 0; */
-/* 	int right = (int) pageptrs.size - 1; */
-
-/* 	if (pageptrs.size == 0) */
-/* 		return -1; */
-
-/* 	while (left <= right) { */
-/* 		int mid = left + (right - left) / 2; */
-/* 		if (pageptrs.buff[mid] == pageptr) */
-/* 			return mid; */
-/* 		else if (pageptrs.buff[mid] > pageptr) */
-/* 			right = mid - 1; */
-/* 		else */
-/* 			left = mid + 1; */
-/* 	} */
-
-/* 	return -1;	 */
-/* } */
-
-
-/* static void Page_rem_pageptrs(int i) */
-/* { */
-/* 	assert(i >= 0); */
-/* 	if (pageptrs.size > 0) */
-/* 		pageptrs.buff[i] = pageptrs.buff[pageptrs.size - 1]; */
-/* 	pageptrs.size--; */
-/* } */
-
 
 uint8_t *Page_find_chks_page(const uint8_t *chkptr)
 {

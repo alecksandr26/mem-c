@@ -1,17 +1,15 @@
 #include <except.h>
 #include <except/assert.h>
+#include <string.h>
 
 #include "chk.h"
 #include "heap.h"
-#include "utils.h"
 
 typedef struct {
 	long data[4];
 } Chk_checksum_T;
 
 int CHK_MIN_CHUNK_SIZE = 40;
-
-
 Except_T ExceptOverFreededChunks = INIT_EXCEPT_T("Over freeded chunks");
 
 // Allocating 32772 bytes about 32 kilo bytes

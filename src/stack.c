@@ -1,10 +1,11 @@
 #include <except/assert.h>
 #include "stack.h"
 
+
+/* 16392 bytes around 16 kilo bytes */
 static Stack_T stack = {
 	.size = 0,
 };
-
 
 void Stack_push(uint32_t val)
 {

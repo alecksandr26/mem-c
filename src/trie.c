@@ -6,9 +6,14 @@
 #include "trie.h"
 #include "stack.h"
 
+/* TODO: Create the exceptions and investigate how to save more memory in the trie */
+
 // Alloc the trie, and initialized its first root node
-// Allocating 4210688 about 4 mega bytes, but offers about 1 million of addresses
-// 32 * 4210688 = 129 mega bytes
+// Allocating 4210688 about 4 mega bytes, but offers about 1 million of
+// addresses
+
+/* 67633152 bytes around 64.5 mega bytes */
+
 // NOTE: Change this logic to avoid wasting those page ptr bytes
 static TrieNode trie[TRIE_CAPACITY] = {{
     .children =
