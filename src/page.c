@@ -33,7 +33,7 @@ Except_T ExceptFatalPageError = INIT_EXCEPT_T("Fatal error in page manipulation"
 /* 	return (long) ptr_a - (long) ptr_b; */
 /* } */
 
-// TODO: Remove this part of code this makes O(N * log N)
+
 /* static void Page_sort_pageptrs(void) */
 /* { */
 /* 	qsort(pageptrs.buff, pageptrs.size, sizeof(uint8_t *), compare_ptrs); */

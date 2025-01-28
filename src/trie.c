@@ -93,10 +93,6 @@ uint8_t *Trie_find(uint64_t chkptr)
 	return curr->page;
 }
 
-// TODO: Investigate how to reuse the space from the uneeded paths
-// Is possible just allocated each node into array of 8 trie nodedes,
-// And then delete the trie nodes that contains just one children
-
 static inline uint32_t TrieNode_num_children(TrieNode *node)
 {
 	uint32_t num = 0;

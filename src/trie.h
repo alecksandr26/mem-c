@@ -1,7 +1,6 @@
 #ifndef TRIE_H
 #define TRIE_H
 
-// TODO: Map ptr 64 bit -> 64 bit pointer
 #include <stdint.h>
 
 /* #define TRIE_CAPACITY (4 * 1024) * 32 */
