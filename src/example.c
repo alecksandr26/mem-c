@@ -22,7 +22,7 @@ struct {
 void add_linked_list_node(int val)
 {
 	NodeList *new_node;
-
+	
 	NEW(new_node);		/* Use the MACRO to alloc a new node */
 	new_node->val = val;
 

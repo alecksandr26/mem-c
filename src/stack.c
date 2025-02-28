@@ -1,8 +1,7 @@
 #include <except/assert.h>
 #include "stack.h"
 
-
-/* 16392 bytes around 16 kilo bytes */
+/* 16392 bytes around 16 kilobytes */
 static Stack_T stack = {
 	.size = 0,
 };

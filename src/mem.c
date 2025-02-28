@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <string.h>
-#include <errno.h>
 #include <except.h>
 #include <except/assert.h>
 #include <stddef.h>

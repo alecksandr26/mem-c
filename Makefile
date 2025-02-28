@@ -80,6 +80,10 @@ $(BUILD_DIR):
 compile: C_FLAGS = $(C_COMPILE_FLAGS)
 compile: clean $(MAIN) $(TESTS)
 
+install: compile
+	sudo cp -r $(LIB_DIR)/* /usr/lib
+	sudo cp $(INCLUDE_DIR)/*.h /usr/include
+
 clean:
 	rm -v -rf $(BUILD_DIR)
 

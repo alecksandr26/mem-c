@@ -5,7 +5,9 @@
 /* TODO: Add more metadata to the chunk to combine better the chunks */
 /* TODO: Add an aligned alloc (Optional) */
 /* TODO: Garbage collector */
-/* TODO: Arena functionality, where the user give us like the space where to manage the memory */
+/* TODO: Arena functionality, where the user give us like the space where to
+ * manage the memory */
+/* TODO: Investigate how much memory is used by putting the page address in the metadata of the chunk */
 
 #include <except.h>
 
