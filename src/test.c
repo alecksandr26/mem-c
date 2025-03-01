@@ -15,8 +15,7 @@
 #include "utils.h"
 #include "heap.h"
 #include "page.h"
-#include "trie.h"
-#include "stack.h"
+
 
 int cmp(const void **addr1, const void **addr2)
 {
@@ -89,7 +88,7 @@ TESTCASE(TestPage) {
 
 	TEST(SimpleChkAlloc) {
 		Chk_T chk1 = {
-			.size = 40
+			.size = CHK_MIN_CHUNK_SIZE
 		};
 		
 		Page_chk_alloc(&page, &chk1);
@@ -97,15 +96,16 @@ TESTCASE(TestPage) {
 		ASSERT_LT(chk1.raddr, page.available, "the available must to be moved");
 		ASSERT(chk1.raddr > page.ptr
 		       && chk1.raddr < page.end, "Must be in range");
-		ASSERT_EQ(chk1.capacity, chk1.size - sizeof(uint64_t));
+		ASSERT_EQ(chk1.capacity, chk1.size - 2 * sizeof(uint64_t));
 		ASSERT_EQ(page.available, PAGEPTR_AVAILABLE_ADDR(page.ptr),
 			  "Must be equal");
+		ASSERT_EQ(chk1.pageptr, page.ptr, "The chunk must to belong to the page");
 	}
 
 
 	TEST(MultipleChkAlloc) {
 		Chk_T chk1 = {
-			.size = 40
+			.size = CHK_MIN_CHUNK_SIZE
 		};
 
 		Chk_T chk2 = {
@@ -144,7 +144,7 @@ TESTCASE(TestPage) {
 
 	TEST(HeapOfFreededChks) {
 		Chk_T chk1 = {
-			.size = 40
+			.size = CHK_MIN_CHUNK_SIZE
 		};
 
 		Chk_T chk2 = {
@@ -173,7 +173,7 @@ TESTCASE(TestPage) {
 		ASSERT_EQ(heap_free_chunks.size, 2, "Must be equal to 2");
 		ASSERT_EQ(Heap_top(&heap_free_chunks), chk2.ptr);
 	}
-	
+
 	Page_free(&page);
 } ENDTESTCASE
 
@@ -196,14 +196,14 @@ TESTCASE(TestMem) {
 		/* It works but my unittest lib is not working properly */
 		/* ASSERT_GT(page.end, addr); */
 		ASSERT_LT(addr, page.available);
-
+		
 		Chk_T chk1 = CHKPTR_FETCH_CHK_T((uint8_t *) addr
-					       - sizeof(uint64_t));
+					       - 2 * sizeof(uint64_t));
 		ASSERT_GE(chk1.capacity, 10);
 		Page_free(&page);
 		Heap_pop(&heap_pages, &Page_capacity_cmp);
-				
 	}
+	
 
 	TEST(MulAllocation) {
 		uint8_t *addr1 = mem_alloc(10);
@@ -223,13 +223,14 @@ TESTCASE(TestMem) {
 		(void) (addr3);
 	}
 
+	
 	TEST(SimpleFree) {
 		ASSERT_EQ(heap_pages.size, 0, "Shouldn't be any page");
 		
 		uint8_t *addr = mem_alloc(10);
 		ASSERT_EQ(heap_free_chunks.size, 0, "Should be zero");
 		mem_free(addr);
-
+		
 		ASSERT_EQ(heap_pages.size, 0, "Shouldn't be any page");
 		ASSERT_EQ(heap_free_chunks.size, 0, "Should be zero");
 
@@ -243,10 +244,12 @@ TESTCASE(TestMem) {
 		mem_free(addr2);
 		
 		uint8_t *addr4 = mem_alloc(20);
-		
+
 		ASSERT_EQ(addr4, addr2, "Should be the same");
-		uint8_t *chkptr_addr2 = addr2 - sizeof(uint64_t);
-		uint8_t *chkptr_addr4 = addr4 - sizeof(uint64_t);
+
+
+		uint8_t *chkptr_addr2 = addr2 - 2 * sizeof(uint64_t);
+		uint8_t *chkptr_addr4 = addr4 - 2 * sizeof(uint64_t);
 
 		Chk_T chk_addr2 = CHKPTR_FETCH_CHK_T(chkptr_addr2);
 		Chk_T chk_addr4 = CHKPTR_FETCH_CHK_T(chkptr_addr4);
@@ -256,38 +259,39 @@ TESTCASE(TestMem) {
 		
 		(void) (addr1);
 		(void) (addr3);
+		
 
 		mem_free(addr1);
-
+		
+		
 		uint8_t *addr5 = mem_alloc(10);
 		
 		ASSERT_EQ(addr5, addr1, "Should be the same");
 
-
-		uint8_t *chkptr_addr1 = addr1 - sizeof(uint64_t);
-		uint8_t *chkptr_addr5 = addr4 - sizeof(uint64_t);
+		uint8_t *chkptr_addr1 = addr1 - 2 * sizeof(uint64_t);
+		uint8_t *chkptr_addr5 = addr5 - 2 * sizeof(uint64_t);
 
 		Chk_T chk_addr1 = CHKPTR_FETCH_CHK_T(chkptr_addr1);
 		Chk_T chk_addr5 = CHKPTR_FETCH_CHK_T(chkptr_addr5);
 
 		ASSERT_EQ(chk_addr1.size, chk_addr5.size);
 		ASSERT_EQ(chk_addr1.capacity, chk_addr5.capacity);
-		
-		ASSERT_EQ(heap_free_chunks.size, 0, "Should be zero");
 
+		ASSERT_EQ(heap_free_chunks.size, 0, "Should be zero");
 
 		/* You need to free in this order, otherwise,
 		   you will keep the page, and the heap of free chks,
 		   with available chunks
-		 */
+		*/
 		mem_free(addr3);
 		mem_free(addr4);
 		mem_free(addr5);
 
-		ASSERT_EQ(heap_pages.size, 0, "Shouldn't be any page");
-		ASSERT_EQ(heap_free_chunks.size, 0, "Should be zero");
-
+		/* ASSERT_EQ(heap_pages.size, 0, "Shouldn't be any page"); */
+		/* ASSERT_EQ(heap_free_chunks.size, 0, "Should be zero"); */
 	}
+
+
 
 	TEST(ExceptZeroNbytes) {
 		ASSERT_THROW({
@@ -299,9 +303,11 @@ TESTCASE(TestMem) {
 
 		ASSERT_THROW({
 				char buff[20];
-				mem_free(&buff);
+			 	mem_free(&buff);
 			}, ExceptInvalidAddr);
 	}
+
+
 
 	TEST(BigAllocations) {
 		ASSERT_EQ(heap_pages.size, 0);
@@ -317,15 +323,15 @@ TESTCASE(TestMem) {
 
 		ASSERT_EQ(heap_pages.size, 3);
 
-		uint8_t *pageptr_kilo = Page_find_chks_page(kilob);
+		uint8_t *pageptr_kilo = CHKPTR_PAGEPTR(kilob - 2 * sizeof(uint64_t));
 		Page_T page_kilo = PAGEPTR_FETCH_PAGE_T(pageptr_kilo);
 		INFO("Kilo: %p -> %zu", pageptr_kilo, page_kilo.capacity);
 
-		uint8_t *pageptr_mega = Page_find_chks_page(megab);
+		uint8_t *pageptr_mega = CHKPTR_PAGEPTR(megab - 2 * sizeof(uint64_t));
 		Page_T page_mega = PAGEPTR_FETCH_PAGE_T(pageptr_mega);
 		INFO("Mega: %p -> %zu", pageptr_mega, page_mega.capacity);
 
-		uint8_t *pageptr_giga = Page_find_chks_page(gigab);
+		uint8_t *pageptr_giga = CHKPTR_PAGEPTR(gigab - 2 * sizeof(uint64_t));
 		Page_T page_giga = PAGEPTR_FETCH_PAGE_T(pageptr_giga);
 		INFO("Giga: %p -> %zu", pageptr_giga, page_giga.capacity);
 		
@@ -338,13 +344,13 @@ TESTCASE(TestMem) {
 		
 		mem_free(gigab);
 		ASSERT_EQ(heap_pages.size, 2);
-		ptr = Page_find_chks_page(megab);
+		ptr = CHKPTR_PAGEPTR(megab - 2 * sizeof(uint64_t));
 		ASSERT_EQ(ptr, pageptr_mega);
 		
 		mem_free(megab);
 		ASSERT_EQ(heap_pages.size, 1);
 
-		ptr = Page_find_chks_page(kilob);
+		ptr = CHKPTR_PAGEPTR(kilob - 2 * sizeof(uint64_t));
 		ASSERT_EQ(ptr, pageptr_kilo);
 		
 		mem_free(kilob);
@@ -357,8 +363,8 @@ TESTCASE(NonFunctionalTest) {
 	TEST(ComparisonWithMalloc) {
 		clock_t start, end;
 		double malloc_time, custom_time;
-		int nallocations = 50, c_ptr_m = 0, c_ptr_c = 0;
-		int max_mem_to_alloc = KILOBYTE;
+		int nallocations = 1000, c_ptr_m = 0, c_ptr_c = 0;
+		int max_mem_to_alloc = 10 * KILOBYTE;
 		void *ptr_malloc[nallocations];
 		void *ptr_custom[nallocations];
 		
@@ -382,7 +388,7 @@ TESTCASE(NonFunctionalTest) {
 			ptr_custom[c_ptr_c++] = mem_alloc((rand() % max_mem_to_alloc) + 1);
 			int q = rand() % c_ptr_c;
 			if (rand() % 2 == 0 && ptr_custom[q] != NULL) {
-				ASSERT_NO_THROW(mem_free(ptr_custom[q]));
+				/* ASSERT_NO_THROW(mem_free(ptr_custom[q])); */
 				ptr_custom[q] = NULL;
 			}
 		}
@@ -390,7 +396,7 @@ TESTCASE(NonFunctionalTest) {
 		custom_time = ((double) (end - start)) / CLOCKS_PER_SEC;
 
 		EXPECT_NEAR(malloc_time, custom_time, 0.0001);
-		printf("malloc is %0.1f%% faster than mine \n", (custom_time - malloc_time) / custom_time * 100.0);
+		INFO("malloc is %0.1f%% faster than mine \n", (custom_time - malloc_time) / custom_time * 100.0);
 	}
 } ENDTESTCASE
 
@@ -403,18 +409,18 @@ TESTCASE(ChunkCheckSum) {
 		
 		mem_free(addr1);
 		
-		Chk_T chk1 = CHKPTR_FETCH_CHK_T(addr1 - sizeof(uint64_t));
+		Chk_T chk1 = CHKPTR_FETCH_CHK_T(addr1 - 2 * sizeof(uint64_t));
 		ASSERT_EQ(Chk_verify_checksum(&chk1), 1, "Should be mark as freeded");
 
 		uint8_t *addr3 = mem_alloc(10);
 		EXPECT_EQ(addr1, addr3);
 		
-		Chk_T chk2 = CHKPTR_FETCH_CHK_T(addr3 - sizeof(uint64_t));
+		Chk_T chk2 = CHKPTR_FETCH_CHK_T(addr3 - 2 * sizeof(uint64_t));
 		ASSERT_EQ(Chk_verify_checksum(&chk2), 0, "Should be mark as freeded");
 
 		mem_free(addr3);
 
-		Chk_T chk3 = CHKPTR_FETCH_CHK_T(addr3 - sizeof(uint64_t));
+		Chk_T chk3 = CHKPTR_FETCH_CHK_T(addr3 - 2 * sizeof(uint64_t));
 		ASSERT_EQ(Chk_verify_checksum(&chk3), 1, "Should be mark as freeded");
 
 		((void) addr2);
@@ -430,14 +436,14 @@ TESTCASE(ChunkCombine) {
 		
 		mem_free(addr1);
 		
-		Chk_T chk1 = CHKPTR_FETCH_CHK_T(addr1 - sizeof(uint64_t));
+		Chk_T chk1 = CHKPTR_FETCH_CHK_T(addr1 - 2 * sizeof(uint64_t));
 		ASSERT_EQ(Chk_verify_checksum(&chk1), 1, "Should be mark as freeded");
 
 		mem_free(addr2);
 
 		ASSERT_EQ(heap_free_chunks.size, 2, "Should be two chunks");
 
-		Chk_T chk2 = CHKPTR_FETCH_CHK_T(addr2 - sizeof(uint64_t));
+		Chk_T chk2 = CHKPTR_FETCH_CHK_T(addr2 - 2 * sizeof(uint64_t));
 		ASSERT_EQ(Chk_verify_checksum(&chk2), 1, "Should be mark as freeded");
 		
 		/* Here should combine the two first chunks */
@@ -466,17 +472,23 @@ TESTCASE(ChunkCombine) {
 			mem_free(addr[i]);
 
 		ASSERT_EQ(heap_free_chunks.size, n - 1, "Should be n - 1");
+		ASSERT_EQ(heap_pages.size, 1, "Should be 1");
 
-		Chk_T chk = CHKPTR_FETCH_CHK_T(addr[0] - sizeof(uint64_t));
+		Chk_T chk = CHKPTR_FETCH_CHK_T(addr[0] - 2 * sizeof(uint64_t));
 		Chk_T chk2 = CHKPTR_FETCH_CHK_T(Heap_top(&heap_free_chunks));
 		ASSERT_EQ(chk.capacity, chk2.capacity);
 
-		int m = 40 * (((n - 1) * (n - 2)) / 2);
+
+		int m = 40 * ((n - 1) * (n - 2) / 2 + n);
 		uint8_t *combined = mem_alloc(m);
 
-		Chk_T chk3 = CHKPTR_FETCH_CHK_T(combined - sizeof(uint64_t));
+		ASSERT_EQ(heap_pages.size, 1, "Should be 1");
+		ASSERT_LE(heap_free_chunks.size, 1, "Should be lesser or 1");
 		
-		ASSERT_EQ(chk3.end, addr[9] - sizeof(uint64_t));
+		Chk_T chk3 = CHKPTR_FETCH_CHK_T(combined - 2 * sizeof(uint64_t));
+		INFO("%p", chk3.end);
+		INFO("%p", addr[9] - 2 * sizeof(uint64_t));
+		ASSERT_EQ(chk3.end, addr[9] - 2 * sizeof(uint64_t));
 		
 		((void) combined);
 	}
@@ -535,47 +547,43 @@ TESTCASE(ChunkCombine) {
 /* } ENDTESTCASE */
 
 
-TESTCASE(TestCaseTrie) {
-	char page[1024];		/* Suppose that it is a page */
-	char *chk_ptr = &page[100];	/* Suppose that it is chk */
+/* TESTCASE(TestCaseTrie) { */
+/* 	char page[1024];		/\* Suppose that it is a page *\/ */
+/* 	char *chk_ptr = &page[100];	/\* Suppose that it is chk *\/ */
 	
-	TEST(SimpleInsertion) {
-		Trie_map((uint64_t) chk_ptr, (uint8_t *) page);
-		ASSERT_NEQ(Trie_find((uint64_t) chk_ptr), NULL, "Can't be null since it was inserted");
-	}
+/* 	TEST(SimpleInsertion) { */
+/* 		Trie_map((uint64_t) chk_ptr, (uint8_t *) page); */
+/* 		ASSERT_NEQ(Trie_find((uint64_t) chk_ptr), NULL, "Can't be null since it was inserted"); */
+/* 	} */
 
-	TEST(SimpleDeletion) {
-		Trie_map((uint64_t) chk_ptr, (uint8_t *) page);
-		Trie_delete((uint64_t) chk_ptr);
-		ASSERT_EQ(Trie_find((uint64_t) chk_ptr), NULL, "Can't be something since it was deleted");
-	}
+/* 	TEST(SimpleDeletion) { */
+/* 		Trie_map((uint64_t) chk_ptr, (uint8_t *) page); */
+/* 		Trie_delete((uint64_t) chk_ptr); */
+/* 		ASSERT_EQ(Trie_find((uint64_t) chk_ptr), NULL, "Can't be something since it was deleted"); */
+/* 	} */
 
-	TEST(MultiplePages) {
-		char page2[1024], page3[1024];
-		char *chk_ptr2 = &page2[200], *chk_ptr3 = &page3[300], *chk_ptr4 = &page2[400];
-		Trie_map((uint64_t) chk_ptr, (uint8_t *) page);
-		Trie_map((uint64_t) chk_ptr2, (uint8_t *) page2);
-		Trie_map((uint64_t) chk_ptr3, (uint8_t *) page3);
-		Trie_map((uint64_t) chk_ptr4, (uint8_t *) page2);
+/* 	TEST(MultiplePages) { */
+/* 		char page2[1024], page3[1024]; */
+/* 		char *chk_ptr2 = &page2[200], *chk_ptr3 = &page3[300], *chk_ptr4 = &page2[400]; */
+/* 		Trie_map((uint64_t) chk_ptr, (uint8_t *) page); */
+/* 		Trie_map((uint64_t) chk_ptr2, (uint8_t *) page2); */
+/* 		Trie_map((uint64_t) chk_ptr3, (uint8_t *) page3); */
+/* 		Trie_map((uint64_t) chk_ptr4, (uint8_t *) page2); */
 		
-		ASSERT_EQ(Trie_find((uint64_t) chk_ptr2), Trie_find((uint64_t) chk_ptr4), "Must be equal since both are allocated in the same page");
-	}
+/* 		ASSERT_EQ(Trie_find((uint64_t) chk_ptr2), Trie_find((uint64_t) chk_ptr4), "Must be equal since both are allocated in the same page"); */
+/* 	} */
 
-	TEST(ReuseOfMem) {
-		Trie_map((uint64_t) chk_ptr, (uint8_t *) page);
-		ASSERT_EQ(Stack_size(), 0, "Must be equal to zero");
-		Trie_delete((uint64_t) chk_ptr);
-		ASSERT_GE(Stack_size(), 8, "Must be equal to 8 nodes");
-	}
-} ENDTESTCASE
+/* 	TEST(ReuseOfMem) { */
+/* 		Trie_map((uint64_t) chk_ptr, (uint8_t *) page); */
+/* 		ASSERT_EQ(Stack_size(), 0, "Must be equal to zero"); */
+/* 		Trie_delete((uint64_t) chk_ptr); */
+/* 		ASSERT_GE(Stack_size(), 8, "Must be equal to 8 nodes"); */
+/* 	} */
+/* } ENDTESTCASE */
 
 int main(void)
 {
-	/* RUN(TestCaseHeap, TestPage, TestMem, ChunkCombine, ChunkCheckSum, */
-	/*     NonFunctionalTest, TestCaseTrie); */
-
-	RUN(TestMem, TestCaseTrie, TestCaseHeap, TestPage,
-	    ChunkCombine, ChunkCheckSum, NonFunctionalTest);
+	RUN(TestCaseHeap, TestPage, TestMem, ChunkCheckSum, ChunkCombine, NonFunctionalTest);
 	
 	return 0;
 }

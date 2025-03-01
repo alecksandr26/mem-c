@@ -20,7 +20,6 @@
 #include "src/chk.h"
 #include "src/page.h"
 
-
 /* A more debuggable code */
 void foo(void *addr)
 {
@@ -71,12 +70,10 @@ double random_allocs(MemStats_T *stats, int alloc_size, int nallocations)
 }
 
 
-
-
 int main(void)
 {
 	MemStats_T stats;
-
+	
 	/* Number of test cases */
 	int N = 150;
 	
@@ -92,10 +89,5 @@ int main(void)
 			    elapsed, stats.nfreedchks_p, stats.nnonfreedchks_p);
 	}
 	
-	
 	return 0;
 }
-
-
-
-

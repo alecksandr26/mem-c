@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "trie.h"
+#include "chk.h"
 #include "utils.h"
 #include "heap.h"
 #include "page.h"
@@ -21,8 +21,9 @@ void *mem_alloc(unsigned long nbytes)
 {
 	if (nbytes == 0)
 		RAISE(ExceptInvalidNBytes, "Can't alloc zero bytes (nbytes = 0)");
-	
-	nbytes = aling_to_mul_8(nbytes + sizeof(uint64_t));
+
+	// Align with the size of the metadata
+	nbytes = aling_to_mul_8(nbytes + 2 * sizeof(uint64_t));
 	nbytes = MAX((uint32_t) CHK_MIN_CHUNK_SIZE, nbytes);
 	
 	Chk_T chk = {
@@ -31,7 +32,7 @@ void *mem_alloc(unsigned long nbytes)
 
 	if (heap_free_chunks.size > 0) {
 		Chk_T top = CHKPTR_FETCH_CHK_T(Heap_top(&heap_free_chunks));
-		Chk_combine_with_freeded_neighbor(&top, PAGEPTR_AVAILABLE_ADDR(Page_find_chks_page(top.raddr)));
+		Chk_combine_with_freeded_neighbor(&top, PAGEPTR_AVAILABLE_ADDR(top.pageptr));
 	}
 	
 	if (heap_free_chunks.size > 0
@@ -43,13 +44,18 @@ void *mem_alloc(unsigned long nbytes)
 		if (frag_chk.size >= CHK_MIN_CHUNK_SIZE) {
 			/* TODO: Use the lower addressed chk and push to free the higher */
 			chk.ptr = (uint8_t *) frag_chk.raddr + frag_chk.capacity;
-			chk.capacity = chk.size - sizeof(uint64_t);
-			
+			chk.capacity = chk.size - 2 * sizeof(uint64_t);
+			chk.pageptr = frag_chk.pageptr;
+
+			// Store the metadata for the new chunk
 			*((uint64_t *) chk.ptr) = chk.capacity;
+			*((uint64_t *) chk.ptr + 1) = (uint64_t) chk.pageptr;
 			*((uint64_t *) frag_chk.ptr) = frag_chk.capacity;
-			chk.raddr = chk.ptr + sizeof(uint64_t);
+			
+			chk.raddr = chk.ptr + 2 * sizeof(uint64_t);
 			
 			assert(CHKPTR_CAPACITY(chk.ptr) == (uint32_t) chk.capacity);
+			assert(CHKPTR_PAGEPTR(chk.ptr) == frag_chk.pageptr);
 			assert(CHKPTR_CAPACITY(frag_chk.ptr) == (uint32_t) \
 			       frag_chk.capacity);
 			
@@ -58,7 +64,7 @@ void *mem_alloc(unsigned long nbytes)
 			
 			Chk_rem_checksum(&chk);
 			/* Since it is a new chunk we need to map it */
-			Trie_map((uint64_t) chk.raddr, Trie_find((uint64_t) frag_chk.raddr));
+			/* Trie_map((uint64_t) chk.raddr, Trie_find((uint64_t) frag_chk.raddr)); */
 			return (void *) chk.raddr;
 		}
 
@@ -92,10 +98,10 @@ void *mem_alloc(unsigned long nbytes)
 
 void mem_free(void *addr)
 {
-	uint8_t *chkptr = (uint8_t *) addr - sizeof(uint64_t);
+	uint8_t *chkptr = (uint8_t *) addr - 2 * sizeof(uint64_t);
 	Chk_T chk = CHKPTR_FETCH_CHK_T(chkptr);
 
-	uint8_t *pageptr = Page_find_chks_page(addr);
+	uint8_t *pageptr = chk.pageptr;
 	if (pageptr == NULL)
 		RAISE(ExceptInvalidAddr, "Can't free an invalid addr");
 

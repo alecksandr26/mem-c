@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <except.h>
 #include <except/assert.h>
 #include <string.h>
@@ -9,7 +10,7 @@ typedef struct {
 	long data[4];
 } Chk_checksum_T;
 
-int CHK_MIN_CHUNK_SIZE = 40;
+int CHK_MIN_CHUNK_SIZE = 48;
 Except_T ExceptOverFreededChunks = INIT_EXCEPT_T("Over freeded chunks");
 
 // Allocating 32772 bytes about 32 kilo bytes
@@ -63,7 +64,7 @@ void Chk_combine_with_freeded_neighbor(Chk_T *chk, const uint8_t *ava_pageptr)
 	}
 
 	chk->capacity = (int) (next_chkptr - chk->raddr);
-	chk->size = chk->capacity + sizeof(uint64_t);
+	chk->size = chk->capacity + 2 * sizeof(uint64_t);
 	*((uint64_t *) chk->ptr) = chk->capacity;
 }
 
@@ -72,6 +73,7 @@ void Chk_put_checksum(Chk_T *chk)
 {
 	assert(chk != NULL);
 	assert(chk->raddr != NULL);
+	assert(chk->capacity >= (int32_t) sizeof(Chk_checksum_T));
 	
 	Chk_checksum_T *ptr = (Chk_checksum_T *) chk->raddr;
 	*ptr = Chk_checksum;

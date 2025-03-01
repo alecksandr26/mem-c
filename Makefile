@@ -17,7 +17,7 @@ LIB_DIR = $(addprefix $(BUILD_DIR)/, lib)
 TEST_DIR = $(addprefix $(BUILD_DIR)/, test)
 EXAMPLE_DIR = $(addprefix $(BUILD_DIR)/, example)
 MAIN = $(addprefix $(BUILD_DIR)/, main.out)
-OBJS = $(addprefix $(OBJ_DIR)/, heap.o chk.o page.o mem.o trie.o stack.o mem_dbg.o)
+OBJS = $(addprefix $(OBJ_DIR)/, heap.o chk.o page.o mem.o mem_dbg.o)
 LIBS = $(addprefix $(LIB_DIR)/, libmem.a libmem.so)
 TESTS = $(addprefix $(TEST_DIR)/, test.out)
 EXAMPLES = $(addprefix $(EXAMPLE_DIR)/, example.out)
@@ -36,7 +36,7 @@ res:
 	python3 $(SRC_DIR)/script.py
 
 $(MAIN): main.c $(LIBS) | $(BUILD_DIR)
-	$(C) $(C_GP_FLAGS) $(C_FLAGS) $^ -o $@ $(C_LIBS_FLAGS)
+	$(C) $(C_GP_FLAGS) $(C_FLAGS) $< -L./$(LIB_DIR) -lmem -Wl,-rpath,./build/lib -o $@ -lunittest
 
 test: $(TESTS)
 	$(foreach test, $(TESTS), ./$(test))

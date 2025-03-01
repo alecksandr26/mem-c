@@ -9,7 +9,6 @@
 #include "page.h"
 #include "heap.h"
 #include "chk.h"
-#include "trie.h"
 #include "utils.h"
 
 
@@ -49,8 +48,10 @@ uint8_t *Page_find_chks_page(const uint8_t *chkptr)
 	/* 		left = mid + 1; */
 	/* } */
 
+	
 	// Runtime O(1)
-	return Trie_find((uint64_t) chkptr);
+	/* return Trie_find((uint64_t) chkptr); */
+	return NULL;
 }
 
 int Page_capacity_cmp(const void **addr1, const void **addr2)
@@ -110,17 +111,19 @@ void Page_chk_alloc(Page_T *page, Chk_T *chk)
 	// Alloc the chunk into the map
 	chk->ptr = page->available;
 	chk->end = chk->ptr + chk->size;
-	chk->raddr = page->available + sizeof(uint64_t);
-	chk->capacity = chk->size - sizeof(uint64_t);
+	chk->raddr = page->available + 2 * sizeof(uint64_t);
+	chk->capacity = chk->size - 2 * sizeof(uint64_t);
+	chk->pageptr = page->ptr;
 	*((uint64_t *) chk->ptr) = chk->capacity;
+	*((uint64_t *) chk->ptr + 1) = (uint64_t) (chk->pageptr);
 
 	// Map the actual chunk ptr to its page
-	Trie_map((uint64_t) chk->raddr, page->ptr);
+	// Trie_map((uint64_t) chk->raddr, page->ptr);
 
 #ifndef NDEBUG
 	/* Just to verify that everything works */
 	Chk_T c = CHKPTR_FETCH_CHK_T(chk->ptr);
-
+	assert(c.pageptr == page->ptr);
 	assert(c.capacity == chk->capacity);
 	assert(c.size == chk->size);
 	assert(c.ptr == chk->ptr);
@@ -154,7 +157,7 @@ void Page_chk_free(Page_T *page, Chk_T *chk)
 		*((uint64_t *) (PAGEPTR_START_ADDR(page->ptr))) = (uint64_t) page->available;
 		assert(PAGEPTR_AVAILABLE_ADDR(page->ptr) == page->available);
 		// Unmap the chunk to the page
-		Trie_delete((uint64_t) chk->raddr);
+		// Trie_delete((uint64_t) chk->raddr);
 		return;
 	}
 	

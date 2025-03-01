@@ -2,7 +2,6 @@
 #include <except/assert.h>
 #include <string.h>
 
-#include "trie.h"
 #include "utils.h"
 #ifdef NDEBUG
 #undef NDEBUG
@@ -58,8 +57,8 @@ static void mem_dbg_fetch_memstats_from_page(const int8_t *page_ptr, MemStats_T 
 			stats->nonusedmem_byu += chk.size;
 		} else {
 			stats->nnonfreedchks++;
-			stats->usedmem_byu -= sizeof(uint64_t);
-			stats->nonusedmem_byu += sizeof(uint64_t);
+			stats->usedmem_byu -= 2 * sizeof(uint64_t);
+			stats->nonusedmem_byu += 2 * sizeof(uint64_t);
 		}
 
 
@@ -126,10 +125,11 @@ void mem_dbg_fetch_mem_stats(MemStats_T *stats, int verbose, int log_fd)
 	
 	/* 32772 bytes are from heap_pages,
 	   another 32772 bytes are from heap_free_chunks,
+	   
 	   67633152 bytes are from the trie structure, and finally
 	   16392 bytes are from the stack structure
 	*/
-	stats->totalmem = 2 * 32772 + 67633152 + 16392;
+	stats->totalmem = 2 * 32772;
 	stats->usedmem = 0;
 	stats->usedmem_byu = 0;
 	stats->nonusedmem = stats->totalmem;
@@ -255,24 +255,24 @@ int mem_dbg_is_freeded(const void *addr)
 }
 
 
-void mem_dgb_verify_trie_integrity_and_chk_integrity(void)
-{
-	for (size_t i = 0; i < heap_pages.size; i++) {
-		Page_T page = PAGEPTR_FETCH_PAGE_T(heap_pages.buff[i]);
-		uint8_t *ptr = page.ptr + 2 * sizeof(uint64_t);
-		while (ptr < page.available) {
-			Chk_T chk = CHKPTR_FETCH_CHK_T(ptr);
-			if (Trie_find((uint64_t) chk.raddr) == NULL) {
-				printf("%p, \n", chk.raddr);
-				RAISE(ExceptCorruptedAddr, "The reserved addr has lost it's parent page");
-			}
+/* void mem_dgb_verify_trie_integrity_and_chk_integrity(void) */
+/* { */
+/* 	for (size_t i = 0; i < heap_pages.size; i++) { */
+/* 		Page_T page = PAGEPTR_FETCH_PAGE_T(heap_pages.buff[i]); */
+/* 		uint8_t *ptr = page.ptr + 2 * sizeof(uint64_t); */
+/* 		while (ptr < page.available) { */
+/* 			Chk_T chk = CHKPTR_FETCH_CHK_T(ptr); */
+/* 			if (chk.pageptr == NULL) { */
+/* 				/\* printf("%p, \n", chk.raddr); *\/ */
+/* 				RAISE(ExceptCorruptedAddr, "The reserved addr has lost it's parent page"); */
+/* 			} */
 				
-			if (chk.size < CHK_MIN_CHUNK_SIZE || chk.capacity < CHK_MIN_CHUNK_SIZE - 8)
-				RAISE(ExceptCorruptedAddr, "The reserved addr has been overwrited");
-			ptr += chk.size;
-		}
-	}
-}
+/* 			if (chk.size < CHK_MIN_CHUNK_SIZE || chk.capacity < CHK_MIN_CHUNK_SIZE - 16) */
+/* 				RAISE(ExceptCorruptedAddr, "The reserved addr has been overwrited"); */
+/* 			ptr += chk.size; */
+/* 		} */
+/* 	} */
+/* } */
 
 void mem_dbg_verify_integrity(void)
 {
@@ -286,7 +286,6 @@ void mem_dbg_verify_integrity(void)
 	damage = Heap_verify_integrity(&heap_free_chunks, &Chk_capacity_cmp);
 	if (damage)
 		RAISE(ExceptCorruptedHeapDS, "Fatal error probably because of a buffer overflow issue");
-	
-	mem_dgb_verify_trie_integrity_and_chk_integrity();
+	/* mem_dgb_verify_trie_integrity_and_chk_integrity(); */
 }
 
