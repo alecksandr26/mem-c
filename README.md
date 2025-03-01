@@ -13,10 +13,9 @@
 
 ## Overview
 
-**mem-c** is a simple memory allocator that uses a heap data structure with the **mmap** Linux syscall to manage dynamic memory allocation, *just for educational purpose*. The current implementation has a worst-case time complexity of `O(n * log n)` for chunk searches, but in average cases, it achieves `O(log n)` runtimes.
-
-The allocator is designed to support various memory management features, memory pagination, chunk merging, and future plans for more sophisticated functionalities like garbage collection and arenas (user-defined memory spaces). The project is still evolving, and further optimizations are planned.
-
+**mem-c** is a simple memory allocator that uses a heap data structure with the **mmap** Linux syscall to manage dynamic memory allocation, *just for educational purpose*. The current implementation has a worst-case time complexity of `O(log n)`  runtimes.
+The allocator is designed to support various memory management features, memory pagination, chunk merging, and future plans for more sophisticated functionalities like garbage collection and arenas (user-defined memory spaces). 
+The project is still evolving, and further optimizations are planned.
 Currently, the allocator likely only works on **64-bit** CPU machines.
 
 ## Installation
@@ -46,6 +45,7 @@ If you are using a different distribution, you can run:
    cp include/mem.h /path/you/want/to/install
    cp build/lib/libmem.so /path/you/want/to/install
    ```
+Alternatively, you can accomplish all of that simply by running `make install` and `make uninstall` if you want to delete the library.
    
 ## Getting Started
 
@@ -69,7 +69,7 @@ int main(void)
 
     // Allocate memory for a new struct Person, with the macro `NEW`
     NEW(ptr);
-
+	
     // Use the allocated memory
     ptr->age = 10;
 
@@ -81,6 +81,18 @@ int main(void)
     return 0;
 }
 ```
+The allocations can be done in a single line.
+```C
+struct Person *ptr = NEW(ptr);
+```
+To allocate any kind of array, you can do it simply by specifying its data type, as a seconds 
+argument in the macro `NEW`.
+```C
+int n = 100;
+double *arr = NEW(arr, double[n]);  // It will allocate an array of double of 100 elements
+```
+
+
 
 ### Compiling
 
@@ -175,7 +187,7 @@ int main(void)
 
 In this section, we present the charts showing how the allocator is currently performing. Using scatter charts, I applied polynomial regressions to visualize the trends. Several important observations can be made:
 
-- **Time Complexity**: We can see that time complexity is linear, likely because of the `O(n * log n)` operations. I plan to make optimizations to improve this. It's also worth noting that the release version is almost three times faster than the debug version.
+- **Time Complexity**: We can see that time complexity is linear, likely because of the `O(log n)` operations. I plan to make optimizations to improve this. It's also worth noting that the release version is almost three times faster than the debug version.
   
 - **Memory Management**: A key point is how the allocator handles memory. I need to reserve extra memory to manage dynamic allocations. This extra memory is not directly used by the user, and as shown in the chart, the allocator's memory management follows a logarithmic behavior. Both the raw and percentage representations of this memory are presented. As the user allocates more memory, the extra memory used to manage those allocations becomes negligible compared to the total allocated memory.
 

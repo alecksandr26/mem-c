@@ -76,43 +76,43 @@ int main(void)
 	MemStats_T stats;
 	
 	/* Number of test cases */
-	/* int N = 150; */
+	int N = 150;
 	
-	/* for (int i = 5; i < N; i++) { */
-	/* 	int nallocations = (rand() % (10 * i)) + 10 * (i - 4); */
-	/* 	int alloc_size = (rand() % (128 * i)) + 128 * (i - 4); */
+	for (int i = 5; i < N; i++) {
+		int nallocations = (rand() % (10 * i)) + 10 * (i - 4);
+		int alloc_size = (rand() % (128 * i)) + 128 * (i - 4);
 		
-	/* 	double elapsed = random_allocs(&stats, alloc_size, nallocations); */
-	/* 	LOG_DBG_INF("n allocs: %i, alloc size: %i, non used memory by user: %u, " */
-	/* 		    "non used memory by user percetnage: %lf, elapsed time: %lf, " */
-	/* 		    "freeded chunks percentage: %lf, non freeded chunks percetnage: %lf", */
-	/* 		    nallocations, alloc_size, stats.nonusedmem_byu, stats.nonusedmem_p_byu, */
-	/* 		    elapsed, stats.nfreedchks_p, stats.nnonfreedchks_p); */
-	/* } */
+		double elapsed = random_allocs(&stats, alloc_size, nallocations);
+		LOG_DBG_INF("n allocs: %i, alloc size: %i, non used memory by user: %u, "
+			    "non used memory by user percetnage: %lf, elapsed time: %lf, "
+			    "freeded chunks percentage: %lf, non freeded chunks percetnage: %lf",
+			    nallocations, alloc_size, stats.nonusedmem_byu, stats.nonusedmem_p_byu,
+			    elapsed, stats.nfreedchks_p, stats.nnonfreedchks_p);
+	}
 	
-	struct Person {
-		int age;
-		char name[100];
-	};
+	/* struct Person { */
+	/* 	int age; */
+	/* 	char name[100]; */
+	/* }; */
 
-	struct Person *person;
-	NEW(person);
+	/* struct Person *person; */
+	/* NEW(person); */
 	
-	struct Person *person2;
-	NEW(person2);
+	/* struct Person *person2; */
+	/* NEW(person2); */
 
-	struct Person *person3;
-	NEW(person3);
+	/* struct Person *person3; */
+	/* NEW(person3); */
 
-	struct Person *person4;
-	NEW(person4);
+	/* struct Person *person4; */
+	/* NEW(person4); */
 	
-	FREE(person2);
+	/* FREE(person2); */
 	
-	struct Person *person5;
-	NEW(person5);
+	/* struct Person *person5; */
+	/* NEW(person5); */
 	
-	mem_dbg_fetch_mem_stats(&stats, 3, 1);
+	/* mem_dbg_fetch_mem_stats(&stats, 3, 1); */
 	
 	return 0;
 }

@@ -10,7 +10,9 @@
 
 #include <except.h>
 
-#define NEW(ptr) ptr = mem_alloc(sizeof(*ptr))
+#define NEW(ptr, ...) (ptr) = mem_alloc(__VA_OPT__(true \
+						   ? sizeof((__VA_ARGS__)) \
+						   :) sizeof(*(ptr))
 #define FREE(ptr) do {				\
 		mem_free(ptr);			\
 		ptr = NULL;			\

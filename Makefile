@@ -81,9 +81,16 @@ $(BUILD_DIR):
 compile: C_FLAGS = $(C_COMPILE_FLAGS)
 compile: clean $(MAIN) $(TESTS)
 
+
 install: compile
-	sudo cp -r $(LIB_DIR)/* /usr/lib
-	sudo cp $(INCLUDE_DIR)/*.h /usr/include
+	sudo cp $(LIB_DIR)/libmem.so /usr/lib
+	sudo cp $(LIB_DIR)/libmem.a /usr/lib
+	sudo cp $(INCLUDE_DIR)/mem.h /usr/include
+
+uinstall:
+	sudo rm /usr/lib/libmem.so 
+	sudo rm /usr/lib/libmem.a
+	sudo rm /usr/include/mem.h
 
 clean:
 	rm -v -rf $(BUILD_DIR)
