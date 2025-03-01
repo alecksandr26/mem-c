@@ -1,6 +1,5 @@
 C = cc
 GP = gprof
-C_GP_FLAGS = -pg
 
 C_DEBUG_FLAGS = -Wall -Wextra -pedantic -ggdb -fPIC
 C_COMPILE_FLAGS = -O2 -DNDEBUG -fno-stack-protector -z execstack -no-pie -fPIC
@@ -8,6 +7,7 @@ C_FLAGS = $(C_GP_FLAGS) $(C_DEBUG_FLAGS)
 C_LIBS_FLAGS = -lexcept
 C_FLAGS_WHOLE_ARCHIVE = -Wl,--whole-archive
 C_FLAGS_NO_WHOLE_ARCHIVE = -Wl,--no-whole-archive
+C_PG_FLAGS = -pg
 
 AR = ar rc
 
@@ -31,22 +31,23 @@ all: $(LIBS) $(MAIN) $(EXAMPLES) $(TESTS)
 run: $(MAIN)
 	@echo "Running the DEMO of the project"
 	./$< > data.txt
+
 res:
 	@echo "Printing the already calculated results"
 	python3 $(SRC_DIR)/script.py
 
 $(MAIN): main.c $(LIBS) | $(BUILD_DIR)
-	$(C) $(C_GP_FLAGS) $(C_FLAGS) $< -L./$(LIB_DIR) -lmem -Wl,-rpath,./build/lib -o $@ -lunittest
+	$(C) $(C_PG_FLAGS) $(C_FLAGS) $< $(LIB_DIR)/libmem.a -o $@ $(C_LIBS_FLAGS)
 
 test: $(TESTS)
 	$(foreach test, $(TESTS), ./$(test))
 
 profile: $(MAIN) | run
-	$(GP) $< gmon.out
+	$(GP) $(MAIN) gmon.out
 	rm gmon.out
 
 $(TEST_DIR)/%.out: $(SRC_DIR)/%.c  $(LIBS) | $(TEST_DIR)
-	$(C) $(C_FLAGS) $< -L./$(LIB_DIR) -lmem -Wl,-rpath,./build/lib -o $@ -lunittest
+	$(C) $(C_FLAGS) $< -L./$(LIB_DIR) -lmem -o $@ -lunittest
 
 $(TEST_DIR): $(BUILD_DIR)
 	mkdir -p $@
@@ -86,7 +87,7 @@ install: compile
 
 clean:
 	rm -v -rf $(BUILD_DIR)
-
+	make
 
 
 

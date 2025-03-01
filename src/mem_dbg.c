@@ -132,8 +132,8 @@ void mem_dbg_fetch_mem_stats(MemStats_T *stats, int verbose, int log_fd)
 	stats->totalmem = 2 * 32772;
 	stats->usedmem = 0;
 	stats->usedmem_byu = 0;
-	stats->nonusedmem = stats->totalmem;
-	stats->nonusedmem_byu = 0;
+	stats->nonusedmem = 0;
+	stats->nonusedmem_byu = stats->totalmem;
 
 	stats->minpagenchks = INT32_MAX;
 	stats->maxpagenchks = INT32_MIN;

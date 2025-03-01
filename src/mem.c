@@ -25,7 +25,6 @@ void *mem_alloc(unsigned long nbytes)
 	// Align with the size of the metadata
 	nbytes = aling_to_mul_8(nbytes + 2 * sizeof(uint64_t));
 	nbytes = MAX((uint32_t) CHK_MIN_CHUNK_SIZE, nbytes);
-	
 	Chk_T chk = {
 		.size = nbytes
 	};
