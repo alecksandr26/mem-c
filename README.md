@@ -187,8 +187,7 @@ int main(void)
 
 In this section, we present the charts showing how the allocator is currently performing. Using scatter charts, I applied polynomial regressions to visualize the trends. Several important observations can be made:
 
-- **Time Complexity**: We can see that time complexity is linear, likely because of the `O(log n)` operations. I plan to make optimizations to improve this. It's also worth noting that the release version is almost three times faster than the debug version.
-  
+- **Time Complexity**: We can see that time complexity is linear, likely because of the `O(log n)` operations. I plan to make optimizations to improve this.  
 - **Memory Management**: A key point is how the allocator handles memory. I need to reserve extra memory to manage dynamic allocations. This extra memory is not directly used by the user, and as shown in the chart, the allocator's memory management follows a logarithmic behavior. Both the raw and percentage representations of this memory are presented. As the user allocates more memory, the extra memory used to manage those allocations becomes negligible compared to the total allocated memory.
 
 - **Freed Chunks**: For each allocation, the allocator creates chunks. Due to how memory works, I can't simply release or stop using these chunks because of pagination. Instead, I mark these chunks as freed to reuse them later. The last two charts illustrate how, with more and larger allocations, the number of freed chunks decreases, keeping more allocated chunks in memory.
