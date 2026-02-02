@@ -29,7 +29,7 @@ basedir=$(pwd)
 build () {
     # Verify if in that path exist a PKGBUILD if thats true then it means that we are compiling in local
     # and if by any chance we find out that PKGBUILD contains the package name mem-c it 
-    if [[ -f "../../../../$pkgname/PKGBUILD" ]] && grep -q "pkgname=mem-c" "../../../../$pkgname/PKGBUILD" ; then
+    if [[ -f "../../../../$pkgname/PKGBUILD" ]] && grep -q "pkgname=$pkgname" "../../../../$pkgname/PKGBUILD" ; then
 	echo "[1m[32m==>[0m[1m Compiling package locally..."
 	echo "[1m[32m==>[0m[1m Trying to find the local source code path..."
 	if [ -d "../../$pkgname" ]; then
@@ -62,13 +62,14 @@ build () {
 # Set the compiled files to create the package
 # in this specific order to be able to be installed
 package() {
+    cd $srcdir/$pkgname-$pkgver
+    
     mkdir -p $pkgdir/usr
     mkdir -p $pkgdir/usr/include
     mkdir -p $pkgdir/usr/lib
     
     # If the package is builded not in local
     if [[ -d build/ ]]; then
-	ls -la
 	cp -r include/* $pkgdir/usr/include
 	cp -r build/lib/*.so $pkgdir/usr/lib
 	cp -r build/lib/*.a $pkgdir/usr/lib
