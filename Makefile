@@ -11,11 +11,15 @@ C_PG_FLAGS = -pg
 
 AR = ar rc
 
+M = makepkg
+M_FLAGS = -f --config .makepkg.conf --skipinteg --noextract
+
 BUILD_DIR = build
 OBJ_DIR = $(addprefix $(BUILD_DIR)/, obj)
 LIB_DIR = $(addprefix $(BUILD_DIR)/, lib)
 TEST_DIR = $(addprefix $(BUILD_DIR)/, test)
 EXAMPLE_DIR = $(addprefix $(BUILD_DIR)/, example)
+UPLOAD_DIR = $(addprefix $(BUILD_DIR)/, upload)
 MAIN = $(addprefix $(BUILD_DIR)/, main.out)
 OBJS = $(addprefix $(OBJ_DIR)/, heap.o chk.o page.o mem.o mem_dbg.o)
 LIBS = $(addprefix $(LIB_DIR)/, libmem.a libmem.so)
@@ -25,7 +29,9 @@ EXAMPLES = $(addprefix $(EXAMPLE_DIR)/, example.out example_ralloc.out)
 SRC_DIR = src
 INCLUDE_DIR = include
 
-.PHONY: all, run, clean, compile, test, profile, res
+GCU = ssh://aur@aur.archlinux.org/$(PKGNAME).git # git clone
+
+.PHONY: all, run, clean, compile, test, profile, res, pkg
 all: $(LIBS) $(MAIN) $(EXAMPLES) $(TESTS)
 
 run: $(MAIN)
@@ -77,6 +83,10 @@ $(LIB_DIR): $(BUILD_DIR)
 $(OBJ_DIR): $(BUILD_DIR)
 	mkdir -p $@
 
+$(UPLOAD_DIR): $(BUILD_DIR)
+	mkdir -p $@
+
+
 $(BUILD_DIR):
 	mkdir -p $@
 
@@ -99,10 +109,20 @@ clean:
 	rm -v -rf $(BUILD_DIR)
 	make
 
+pkg:
+	$(M) $(M_FLAGS)
 
 
+$(UPLOAD_DIR)/$(PKGNAME): $(UPLOAD_DIR)
+	@cd $< && git clone $(GCU)
 
-
-
+upload-aur: $(UPLOAD_DIR)/$(PKGNAME)
+	@cp PKGBUILD $</
+	@cd $</ && $(M) --printsrcinfo > .SRCINFO
+	@cd $</ && git add PKGBUILD .SRCINFO
+	@echo -n "Commit-msg: "
+	@read commitmsg
+	@cd $</ && git commit -m commitmsg
+	@cd $</ && git push
 
 

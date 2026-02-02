@@ -11,8 +11,8 @@
 
 # Maintainer: alecksandr <sansepiol26@gmail.com>
 pkgname=mem-c
-pkgver=1.0.0
-pkgrel=1
+pkgver=1.0.1
+pkgrel=2
 epoch=
 pkgdesc="mem-c is a simple memory allocator using a heap data structure with the mmap Linux syscall for dynamic memory management. It has a worst-case search time of O(n * log n) and averages O(log n). The allocator supports memory pagination, chunk merging, and plans for advanced features like garbage collection and arenas."
 arch=(x86_64)
@@ -20,7 +20,7 @@ url="https://github.com/alecksandr26/mem-c/archive/refs/tags/v$pkgver.tar.gz"
 license=('MIT License')
 depends=()
 makedepends=(gcc git make binutils coreutils)
-optdepends=()
+optdepends=(except-c)
 source=("$pkgname-$pkgver.tar.gz::$url")
 md5sums=('SKIP')
 basedir=$(pwd)
@@ -37,14 +37,19 @@ build () {
 	echo "[1m[32m==>[0m[1m Trying to find the local source code path..."
 	if [ -d "../../$pkgname" ]; then
 	    echo "[1m[32m==>[0m[1m Source code $pkgname found..."
-	    cd ../../$pkgname
+	    cd ../../../../$pkgname
 	    echo "[1m[32m==>[0m[1m Compiling package..."
 	    make compile -B
+
 	    mkdir -p $srcdir/$pkgname-$pkgver
 	    mkdir -p $srcdir/$pkgname-$pkgver/include
 	    mkdir -p $srcdir/$pkgname-$pkgver/lib
 	    cp -r include/* $srcdir/$pkgname-$pkgver/include
 	    cp -r build/lib/*.so $srcdir/$pkgname-$pkgver/lib
+	    cp -r build/lib/*.a $srcdir/$pkgname-$pkgver/lib
+	    
+	    # Make the fakeroot pkg dir
+	    mkdir -p $srcdir/../pkg
 	else
 	    echo "[1m[32m==>[0m[1m Error source code $pkgname not found..."
 	    exit 1
@@ -61,4 +66,5 @@ package() {
     mkdir -p $pkgdir/usr/lib
     cp -r include/* $pkgdir/usr/include
     cp -r lib/*.so $pkgdir/usr/lib
+    cp -r lib/*.a $pkgdir/usr/lib
 }
