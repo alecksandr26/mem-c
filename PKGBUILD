@@ -62,11 +62,19 @@ build () {
 # Set the compiled files to create the package
 # in this specific order to be able to be installed
 package() {
-    cd $srcdir/$pkgname-$pkgver
     mkdir -p $pkgdir/usr
     mkdir -p $pkgdir/usr/include
     mkdir -p $pkgdir/usr/lib
-    cp -r include/* $pkgdir/usr/include
-    cp -r lib/*.so $pkgdir/usr/lib
-    cp -r lib/*.a $pkgdir/usr/lib
+    
+    # If the package is builded not in local
+    if [[ -d build/ ]]; then
+	ls -la
+	cp -r include/* $pkgdir/usr/include
+	cp -r build/lib/*.so $pkgdir/usr/lib
+	cp -r build/lib/*.a $pkgdir/usr/lib
+    else
+	cp -r include/* $pkgdir/usr/include
+	cp -r lib/*.so $pkgdir/usr/lib
+	cp -r lib/*.a $pkgdir/usr/lib
+    fi
 }
