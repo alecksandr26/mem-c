@@ -29,6 +29,7 @@ EXAMPLES = $(addprefix $(EXAMPLE_DIR)/, example.out example_ralloc.out)
 SRC_DIR = src
 INCLUDE_DIR = include
 
+PKGNAME = mem-c
 GCU = ssh://aur@aur.archlinux.org/$(PKGNAME).git # git clone
 
 .PHONY: all, run, clean, compile, test, profile, res, pkg
@@ -114,15 +115,15 @@ pkg:
 
 
 $(UPLOAD_DIR)/$(PKGNAME): $(UPLOAD_DIR)
-	@cd $< && git clone $(GCU)
+	cd $< && git clone $(GCU)
 
 upload-aur: $(UPLOAD_DIR)/$(PKGNAME)
-	@cp PKGBUILD $</
-	@cd $</ && $(M) --printsrcinfo > .SRCINFO
-	@cd $</ && git add PKGBUILD .SRCINFO
-	@echo -n "Commit-msg: "
+	cp PKGBUILD $</
+	cd $</ && $(M) --printsrcinfo > .SRCINFO
+	cd $</ && git add PKGBUILD .SRCINFO
+	echo -n "Commit-msg: "
 	@read commitmsg
-	@cd $</ && git commit -m commitmsg
-	@cd $</ && git push
+	cd $</ && git commit -m commitmsg
+	cd $</ && git push
 
 
