@@ -7,9 +7,9 @@
 #include "heap.h"
 
 typedef struct {
-	const uint8_t *raddr;	/* reverserd address for user */
-	uint8_t *ptr, *end, *pageptr;
-	int32_t size, capacity;
+  const uint8_t *raddr;	/* reverserd address for user */
+  uint8_t *ptr, *end, *pageptr;
+  int32_t size, capacity;
 } Chk_T;
 
 
@@ -21,12 +21,12 @@ typedef struct {
 #define CHKPTR_SIZE(chkptr) (CHKPTR_CAPACITY(chkptr) + 2 * sizeof(uint64_t))
 #define CHKPTR_END(chkptr) (CHKPTR_PTR(chkptr) + CHKPTR_SIZE(chkptr))
 #define CHKPTR_FETCH_CHK_T(chkptr){ .raddr = CHKPTR_RADDR(chkptr),	\
-			.pageptr = CHKPTR_PAGEPTR(chkptr),		\
-			.ptr = CHKPTR_PTR(chkptr),			\
-			.size = CHKPTR_SIZE(chkptr),			\
-			.capacity = CHKPTR_CAPACITY((chkptr)),		\
-			.end = CHKPTR_END((chkptr))			\
-			}
+      .pageptr = CHKPTR_PAGEPTR(chkptr),				\
+      .ptr = CHKPTR_PTR(chkptr),					\
+      .size = CHKPTR_SIZE(chkptr),					\
+      .capacity = CHKPTR_CAPACITY((chkptr)),				\
+      .end = CHKPTR_END((chkptr))					\
+      }
 
 #define CHK_CHECK_SUM_SIZE 32
 

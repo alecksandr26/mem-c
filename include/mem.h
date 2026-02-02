@@ -10,13 +10,13 @@
 
 #include <except.h>
 
-#define NEW(ptr, ...) (ptr) = mem_alloc(__VA_OPT__(true \
-						   ? sizeof((__VA_ARGS__)) \
-						   :) sizeof(*(ptr))
+#define NEW(ptr, ...)							\
+  (ptr) = mem_alloc(__VA_OPT__(1 ? sizeof(__VA_ARGS__) :) sizeof(*(ptr)))
+
 #define FREE(ptr) do {				\
-		mem_free(ptr);			\
-		ptr = NULL;			\
-	} while (0)
+    mem_free(ptr);				\
+    ptr = NULL;					\
+  } while (0)
 
 extern Except_T ExceptInvalidNBytes;
 extern Except_T ExceptInvalidAddr;
@@ -33,12 +33,12 @@ extern void mem_free(void *addr);
 
 #ifndef NDEBUG
 typedef struct {
-	int nchks, nfreedchks, nnonfreedchks, minchksize, maxchksize;
-	double avgchksize, nfreedchks_p, nnonfreedchks_p;
-	int npages, minpagesize, maxpagesize, minpagecp, maxpagecp, minpagenchks, maxpagenchks;
-	double avgpagesize, avgpagecp, avgpagenchks;
-	int totalmem, usedmem, nonusedmem, usedmem_byu, nonusedmem_byu;
-	double usedmem_p, nonusedmem_p, usedmem_p_byu, nonusedmem_p_byu;
+  int nchks, nfreedchks, nnonfreedchks, minchksize, maxchksize;
+  double avgchksize, nfreedchks_p, nnonfreedchks_p;
+  int npages, minpagesize, maxpagesize, minpagecp, maxpagecp, minpagenchks, maxpagenchks;
+  double avgpagesize, avgpagecp, avgpagenchks;
+  int totalmem, usedmem, nonusedmem, usedmem_byu, nonusedmem_byu;
+  double usedmem_p, nonusedmem_p, usedmem_p_byu, nonusedmem_p_byu;
 } MemStats_T;
 
 extern Except_T ExceptCorruptedHeapDS;

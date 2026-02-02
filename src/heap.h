@@ -8,14 +8,14 @@
 #define HEAP_PPOS(X) (((X) - 1) / 2)
 
 #define HEAP_SWAP(a, b) do {			\
-		typeof((a)) temp = (a);		\
-		(a) = (b);			\
-		(b) = temp;			\
-	} while (0)
+    typeof((a)) temp = (a);			\
+    (a) = (b);					\
+    (b) = temp;					\
+  } while (0)
 
 typedef struct {
-	void *buff[HEAP_CAPACITY];
-	unsigned int size;
+  void *buff[HEAP_CAPACITY];
+  unsigned int size;
 } Heap_T;
 
 /*
