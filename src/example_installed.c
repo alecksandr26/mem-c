@@ -7,9 +7,6 @@
 /* Since it is an insatlled version we should compiled this manually not with makefile */
 /* cc example_installed.c -lmem && ./a.out */
 
-
-
-
 int main(void)
 {
   /* const int *arr = mem_calloc(sizeof(int), 10); */

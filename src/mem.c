@@ -85,6 +85,7 @@ void *mem_alloc(unsigned long nbytes)
   Page_chk_alloc(&page, &chk);
 	
   Heap_push(&heap_pages, page.ptr, &Page_capacity_cmp);
+  
   assert(chk.capacity > 0 && chk.capacity < chk.size);
   assert(chk.ptr > page.ptr);
   assert(chk.raddr < page.end);
@@ -129,8 +130,8 @@ void *mem_ralloc(void *addr, unsigned long nbytes)
   if (nbytes == 0)
     RAISE(ExceptInvalidNBytes, "Can't alloc zero bytes (nbytes = 0)");
 	
-  uint8_t *chkptr = (uint8_t *) addr - sizeof(uint64_t);
-  uint8_t *pageptr = Page_find_chks_page(addr);
+  uint8_t *chkptr = (uint8_t *) addr - 2 * sizeof(uint64_t);
+  uint8_t *pageptr = Page_find_chks_page(chkptr);
   if (pageptr == NULL)
     RAISE(ExceptInvalidAddr, "Can't free an invalid addr");
   Chk_T chk = CHKPTR_FETCH_CHK_T(chkptr);

@@ -52,6 +52,16 @@ uint8_t *Page_find_chks_page(const uint8_t *chkptr)
   /* return Trie_find((uint64_t) chkptr); */
 
   // Runtime O(1)
+
+#ifndef NDEBUG
+  // For debugging purpuses
+  for (int i = 0; i < (int) heap_pages.size; i++)
+    if (PAGEPTR_START_ADDR(heap_pages.buff[i]) < chkptr
+	&& chkptr < PAGEPTR_END_ADDR(heap_pages.buff[i])) {
+      assert(PAGEPTR_START_ADDR(heap_pages.buff[i]) == CHKPTR_PAGEPTR(chkptr));
+      break;
+    }
+#endif
   return CHKPTR_PAGEPTR(chkptr);
 }
 
@@ -85,17 +95,6 @@ void Page_alloc(Page_T *page, uint64_t nbytes)
 	
   Page_T p = PAGEPTR_FETCH_PAGE_T(pageptr);
   *page = p;
-
-  /* O(N * log(N)) */
-  /* Page_ins_pageptrs(pageptr); */
-  /* Page_sort_pageptrs(); */
-	
-  /* assert(PAGEPTR_AVAILABLE_ADDR(pageptr) == p.available); */
-  /* assert(p.capacity >= (int64_t) (nbytes - 2 * sizeof(uint64_t))); */
-  /* assert(p.size >= (int64_t) nbytes); */
-  /* assert(p.available == pageptr + 2 * sizeof(uint64_t)); */
-  /* assert(p.end == pageptr + nbytes); */
-  /* assert(p.ptr == pageptr); */
 }
 
 void Page_chk_alloc(Page_T *page, Chk_T *chk)

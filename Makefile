@@ -20,7 +20,7 @@ MAIN = $(addprefix $(BUILD_DIR)/, main.out)
 OBJS = $(addprefix $(OBJ_DIR)/, heap.o chk.o page.o mem.o mem_dbg.o)
 LIBS = $(addprefix $(LIB_DIR)/, libmem.a libmem.so)
 TESTS = $(addprefix $(TEST_DIR)/, test.out)
-EXAMPLES = $(addprefix $(EXAMPLE_DIR)/, example.out)
+EXAMPLES = $(addprefix $(EXAMPLE_DIR)/, example.out example_ralloc.out)
 
 SRC_DIR = src
 INCLUDE_DIR = include
@@ -41,6 +41,9 @@ $(MAIN): main.c $(LIBS) | $(BUILD_DIR)
 
 test: $(TESTS)
 	$(foreach test, $(TESTS), ./$(test))
+
+example: $(EXAMPLES)
+	$(foreach example, $(EXAMPLES), ./$(example))
 
 profile: $(MAIN) | run
 	$(GP) $(MAIN) gmon.out
