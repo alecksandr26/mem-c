@@ -117,7 +117,7 @@ void *mem_alloc(unsigned long nbytes)
   return (void *) chk.raddr;
 }
 
-void *mem_copy(void * restrict dest, void * restrict src, unsigned long nbytes)
+void *mem_copy(void * restrict dest, const void * restrict src, unsigned long nbytes)
 {
   uint8_t *d = (uint8_t *) dest;
   uint8_t *s = (uint8_t *) src;
