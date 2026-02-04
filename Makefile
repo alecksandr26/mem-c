@@ -1,8 +1,12 @@
 C = cc
 GP = gprof
 
-C_DEBUG_FLAGS = -Wall -Wextra -pedantic -ggdb -fPIC
-C_COMPILE_FLAGS = -O2 -DNDEBUG -fno-stack-protector -z execstack -no-pie -fPIC
+C_DEBUG_FLAGS = -march=native -mtune=native -mavx2 -msse2 -Wall -Wextra -pedantic -ggdb -fPIC
+C_COMPILE_FLAGS = -O3 -march=native -mtune=native -flto -fomit-frame-pointer \
+                  -mavx2 -msse2 -DNDEBUG -fPIC \
+                  -funroll-loops -fprefetch-loop-arrays \
+                  -finline-functions -fno-plt \
+                  -ftree-vectorize -ffast-math
 C_FLAGS = $(C_GP_FLAGS) $(C_DEBUG_FLAGS)
 C_LIBS_FLAGS = -lexcept
 C_FLAGS_WHOLE_ARCHIVE = -Wl,--whole-archive
@@ -24,7 +28,7 @@ MAIN = $(addprefix $(BUILD_DIR)/, main.out)
 OBJS = $(addprefix $(OBJ_DIR)/, heap.o chk.o page.o mem.o mem_dbg.o)
 LIBS = $(addprefix $(LIB_DIR)/, libmem.a libmem.so)
 TESTS = $(addprefix $(TEST_DIR)/, test.out)
-EXAMPLES = $(addprefix $(EXAMPLE_DIR)/, example.out example_ralloc.out)
+EXAMPLES = $(addprefix $(EXAMPLE_DIR)/, example.out example_ralloc.out example_mem_copy.out)
 
 SRC_DIR = src
 INCLUDE_DIR = include
@@ -57,7 +61,7 @@ profile: $(MAIN) | run
 	rm gmon.out
 
 $(TEST_DIR)/%.out: $(SRC_DIR)/%.c  $(LIBS) | $(TEST_DIR)
-	$(C) $(C_FLAGS) $< -L./$(LIB_DIR) -lmem -o $@ -lunittest
+	$(C) $(C_FLAGS) $< $(LIB_DIR)/libmem.a -o $@ -lunittest $(C_LIBS_FLAGS)
 
 $(TEST_DIR): $(BUILD_DIR)
 	mkdir -p $@

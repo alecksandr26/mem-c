@@ -30,6 +30,8 @@ extern void *mem_alloc(unsigned long nbytes);
 extern void *mem_ralloc(void *addr, unsigned long nbytes);
 extern void *mem_calloc(unsigned long obj_size, unsigned long nobjs);
 extern void mem_free(void *addr);
+extern void *mem_copy(void * restrict dest, void * restrict src, unsigned long nbytes);
+extern void *mem_set(void *dest, int value, unsigned long nbytes);
 
 #ifndef NDEBUG
 typedef struct {

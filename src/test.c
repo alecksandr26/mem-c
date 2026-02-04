@@ -339,7 +339,7 @@ TESTCASE(TestMem) {
     ASSERT_EQ(page_mega.size, aling_to_mul_4kb(2 * MEGABYTE + 2 * sizeof(uint64_t)));
     ASSERT_EQ(page_kilo.size, aling_to_mul_4kb(6 * KILOBYTE + 2 * sizeof(uint64_t)));
 		
-    uint8_t *ptr = Page_find_chks_page(gigab);
+    uint8_t *ptr = Page_find_chks_page(gigab - 2 * sizeof(uint64_t));
     ASSERT_NEQ(ptr, pageptr_mega);
 		
     mem_free(gigab);
@@ -495,9 +495,140 @@ TESTCASE(ChunkCombine) {
 } ENDTESTCASE
 
 
+TESTCASE(TestMemCopy) {
+  TEST(SimpleCopy) {
+    uint8_t src[100];
+    uint8_t dest[100];
+    
+    for (int i = 0; i < 100; i++) {
+      src[i] = i;
+    }
+    
+    mem_copy(dest, src, 100);
+    
+    for (int i = 0; i < 100; i++) {
+      ASSERT_EQ(dest[i], src[i]);
+    }
+  }
+
+  TEST(LargeCopy) {
+    size_t size = 10 * KILOBYTE;
+    uint8_t *src = mem_alloc(size);
+    uint8_t *dest = mem_alloc(size);
+    
+    for (size_t i = 0; i < size; i++) {
+      src[i] = rand() % 256;
+    }
+    
+    mem_copy(dest, src, size);
+    
+    for (size_t i = 0; i < size; i++) {
+      ASSERT_EQ(dest[i], src[i]);
+    }
+    
+    mem_free(src);
+    mem_free(dest);
+  }
+
+  TEST(PerformanceVsMemcpy) {
+    clock_t start, end;
+    size_t size = 5 * MEGABYTE;
+    int iterations = 50;
+    
+    uint8_t *src = mem_alloc(size);
+    uint8_t *dest1 = mem_alloc(size);
+    uint8_t *dest2 = mem_alloc(size);
+    
+    // Test memcpy
+    start = clock();
+    for (int i = 0; i < iterations; i++) {
+      memcpy(dest1, src, size);
+    }
+    end = clock();
+    double memcpy_time = ((double)(end - start)) / CLOCKS_PER_SEC;
+    
+    // Test mem_copy
+    start = clock();
+    for (int i = 0; i < iterations; i++) {
+      mem_copy(dest2, src, size);
+    }
+    end = clock();
+    double custom_time = ((double)(end - start)) / CLOCKS_PER_SEC;
+    
+    INFO("memcpy: %.4f sec | mem_copy: %.4f sec | ratio: %.1f%%",
+         memcpy_time, custom_time, (custom_time / memcpy_time) * 100.0);
+    
+    EXPECT_LT(custom_time, memcpy_time * 2.0);
+    
+    mem_free(src);
+    mem_free(dest1);
+    mem_free(dest2);
+  }
+} ENDTESTCASE
+
+
+
+TESTCASE(TestMemSet) {
+  TEST(SimpleFill) {
+    uint8_t buffer[100];
+    
+    mem_set(buffer, 0xAB, 100);
+    
+    for (int i = 0; i < 100; i++) {
+      ASSERT_EQ(buffer[i], 0xAB);
+    }
+  }
+
+  TEST(LargeFill) {
+    size_t size = 10 * KILOBYTE;
+    uint8_t *buffer = mem_alloc(size);
+    
+    mem_set(buffer, 0x42, size);
+    
+    for (size_t i = 0; i < size; i++) {
+      ASSERT_EQ(buffer[i], 0x42);
+    }
+    
+    mem_free(buffer);
+  }
+
+  TEST(PerformanceVsMemset) {
+    clock_t start, end;
+    size_t size = 5 * MEGABYTE;
+    int iterations = 50;
+    
+    uint8_t *buffer1 = mem_alloc(size);
+    uint8_t *buffer2 = mem_alloc(size);
+    
+    // Test memset
+    start = clock();
+    for (int i = 0; i < iterations; i++) {
+      memset(buffer1, 0xFF, size);
+    }
+    end = clock();
+    double memset_time = ((double)(end - start)) / CLOCKS_PER_SEC;
+    
+    // Test mem_set
+    start = clock();
+    for (int i = 0; i < iterations; i++) {
+      mem_set(buffer2, 0xFF, size);
+    }
+    end = clock();
+    double custom_time = ((double)(end - start)) / CLOCKS_PER_SEC;
+    
+    INFO("memset: %.4f sec | mem_set: %.4f sec | ratio: %.1f%%", 
+         memset_time, custom_time, (custom_time / memset_time) * 100.0);
+    
+    EXPECT_LT(custom_time, memset_time * 2.0);
+    
+    mem_free(buffer1);
+    mem_free(buffer2);
+  }
+} ENDTESTCASE
+
 int main(void)
 {
-  RUN(TestCaseHeap, TestPage, TestMem, ChunkCheckSum, ChunkCombine, NonFunctionalTest);
+  RUN(TestCaseHeap, TestPage, TestMem, ChunkCheckSum, ChunkCombine, TestMemCopy, NonFunctionalTest, TestMemSet);
 	
   return 0;
 }
