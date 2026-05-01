@@ -1,17 +1,18 @@
 C = cc
 GP = gprof
 
-C_DEBUG_FLAGS = -march=native -mtune=native -mavx2 -msse2 -Wall -Wextra -pedantic -ggdb -fPIC
-C_COMPILE_FLAGS = -O3 -march=native -mtune=native -flto -fomit-frame-pointer \
-                  -mavx2 -msse2 -DNDEBUG -fPIC \
-                  -funroll-loops -fprefetch-loop-arrays \
-                  -finline-functions -fno-plt \
-                  -ftree-vectorize -ffast-math
-C_FLAGS = $(C_GP_FLAGS) $(C_DEBUG_FLAGS)
+C_BASE_FLAGS = -march=native -mtune=native -mavx2 -msse2 -fPIC
+C_DEBUG_FLAGS = -Wall -Wextra -pedantic -ggdb
+C_OPTIMIZE_FLAGS = -O3 -flto -DNDEBUG -funroll-loops -fprefetch-loop-arrays \
+                   -finline-functions -fno-plt -ftree-vectorize -ffast-math
+C_OMIT_FP = -fomit-frame-pointer
+C_PG_FLAGS = 
+C_EXTRA_FLAGS =
+
+C_FLAGS = $(C_BASE_FLAGS) $(C_EXTRA_FLAGS) $(C_PG_FLAGS)
 C_LIBS_FLAGS = -lexcept
 C_FLAGS_WHOLE_ARCHIVE = -Wl,--whole-archive
 C_FLAGS_NO_WHOLE_ARCHIVE = -Wl,--no-whole-archive
-C_PG_FLAGS = -pg
 
 AR = ar rc
 
@@ -56,10 +57,13 @@ test: $(TESTS)
 example: $(EXAMPLES)
 	$(foreach example, $(EXAMPLES), ./$(example))
 
+profile: C_PG_FLAGS = -pg
+profile: C_EXTRA_FLAGS = $(C_DEBUG_FLAGS)
 profile: $(MAIN) | run
 	$(GP) $(MAIN) gmon.out
 	rm gmon.out
 
+# TODO: Broken until we create another test and fix and adapt to another new unit test library
 $(TEST_DIR)/%.out: $(SRC_DIR)/%.c  $(LIBS) | $(TEST_DIR)
 	$(C) $(C_FLAGS) $< $(LIB_DIR)/libmem.a -o $@ -lunittest $(C_LIBS_FLAGS)
 
@@ -96,8 +100,8 @@ $(BUILD_DIR):
 	mkdir -p $@
 
 
-compile: C_FLAGS = $(C_COMPILE_FLAGS)
-compile: clean $(MAIN) $(TESTS)
+compile: C_EXTRA_FLAGS = $(C_OPTIMIZE_FLAGS) $(C_OMIT_FP)
+compile: clean $(MAIN)
 
 
 install: compile
@@ -112,7 +116,6 @@ uinstall:
 
 clean:
 	rm -v -rf $(BUILD_DIR)
-	make
 
 pkg:
 	$(M) $(M_FLAGS)
